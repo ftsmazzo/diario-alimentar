@@ -297,6 +297,85 @@ a { color: var(--mata); }
   margin-bottom: 14px;
 }
 
+/* ── IA — registro rápido ── */
+.ia-painel { border-color: var(--mata); background: linear-gradient(180deg, #f8fcf9 0%, var(--cartao) 100%); }
+.ia-cab strong { font-family: "Sora", sans-serif; display: block; margin-bottom: 4px; }
+.ia-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.ia-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--cartao);
+  cursor: pointer;
+  min-height: 72px;
+  text-align: left;
+  font: inherit;
+  color: var(--tinta);
+  transition: border-color .15s, transform .1s;
+}
+.ia-btn:active { transform: scale(.98); border-color: var(--mata); }
+.ia-btn-icone {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Sora", sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ia-icone-voz { background: var(--mata-claro); color: var(--mata); }
+.ia-icone-foto { background: var(--fome-claro); color: var(--fome); }
+.ia-btn-texto { display: flex; flex-direction: column; gap: 2px; }
+.ia-btn-texto strong { font-family: "Sora", sans-serif; font-size: .95rem; }
+.ia-btn-texto span { font-size: .78rem; color: var(--tinta-2); font-weight: 400; }
+.ia-btn-voz.ia-gravando { border-color: var(--erro); background: var(--erro-claro); }
+.ia-btn-voz.ia-gravando .ia-icone-voz { background: var(--erro); color: #fff; }
+.ia-carregando { opacity: .85; pointer-events: none; }
+.ia-status { margin-top: 12px; padding: 10px 12px; border-radius: 10px; }
+.ia-status-erro { background: var(--erro-claro); color: var(--erro); }
+.ia-preview {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--linha);
+}
+.badge-ia {
+  display: inline-block;
+  background: var(--mata);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-bottom: 8px;
+}
+.ia-transcricao { font-style: italic; margin-top: 6px; }
+.ia-detalhes {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 6px;
+}
+.ia-detalhes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--papel);
+  border-radius: 10px;
+  font-size: .88rem;
+}
+.ia-detalhes li span { color: var(--tinta-2); }
+.ia-preview-acoes { display: grid; gap: 8px; }
+.ia-divisor { margin-top: 22px; font-size: .92rem; color: var(--tinta-2); font-weight: 600; }
+.ia-desativada code { font-size: .8rem; }
+
 /* ── hub de registro (paciente) ── */
 .hub-registro {
   display: grid;

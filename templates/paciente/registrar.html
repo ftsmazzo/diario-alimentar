@@ -5,9 +5,52 @@
 <header class="pagina-cab">
   <div class="pagina-cab-texto">
     <h1>O que deseja registrar?</h1>
-    <p class="pagina-sub">Escolha o tipo de registro para preencher agora.</p>
+    <p class="pagina-sub">Fale, fotografe ou preencha manualmente — você escolhe.</p>
   </div>
 </header>
+
+{% if ia_habilitada %}
+<section class="painel ia-painel" id="ia-painel">
+  <div class="ia-cab">
+    <strong>Registro rápido com IA</strong>
+    <p class="suave">Diga o que comeu, como dormiu ou o exercício que fez. Ou envie uma foto do prato.</p>
+  </div>
+
+  <div class="ia-acoes">
+    <button type="button" class="ia-btn ia-btn-voz" id="ia-btn-voz" aria-pressed="false">
+      <span class="ia-btn-icone ia-icone-voz" aria-hidden="true">Mic</span>
+      <span class="ia-btn-texto"><strong>Falar</strong><span>Toque para gravar</span></span>
+    </button>
+    <label class="ia-btn ia-btn-foto">
+      <span class="ia-btn-icone ia-icone-foto" aria-hidden="true">Foto</span>
+      <span class="ia-btn-texto"><strong>Foto</strong><span>Prato ou refeição</span></span>
+      <input type="file" id="ia-input-foto" accept="image/*" capture="environment" hidden>
+    </label>
+  </div>
+
+  <div class="ia-status suave" id="ia-status" hidden></div>
+
+  <div class="ia-preview" id="ia-preview" hidden>
+    <div class="ia-preview-cab">
+      <span class="badge-ia" id="ia-tipo-badge">Refeição</span>
+      <p id="ia-resumo"></p>
+      <p class="suave ia-transcricao" id="ia-transcricao"></p>
+    </div>
+    <ul class="ia-detalhes" id="ia-detalhes"></ul>
+    <div class="ia-preview-acoes">
+      <button type="button" class="btn btn-primario btn-bloco" id="ia-btn-salvar">Salvar registro</button>
+      <button type="button" class="btn btn-secundario btn-bloco" id="ia-btn-editar">Revisar e editar</button>
+      <button type="button" class="btn btn-contorno btn-bloco" id="ia-btn-descartar">Descartar</button>
+    </div>
+  </div>
+</section>
+{% else %}
+<div class="painel ia-desativada">
+  <p class="suave">Registro por voz e foto ficará disponível quando o administrador configurar a chave de IA (<code>OPENAI_API_KEY</code>) no servidor.</p>
+</div>
+{% endif %}
+
+<h2 class="ia-divisor">Ou preencha manualmente</h2>
 
 <div class="hub-registro">
   <a class="hub-item" href="{{ url_for('paciente.nova_refeicao') }}">
@@ -32,4 +75,10 @@
     </div>
   </a>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if ia_habilitada %}
+<script src="{{ url_for('static', filename='js/ia_registro.js') }}"></script>
+{% endif %}
 {% endblock %}

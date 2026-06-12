@@ -10,6 +10,11 @@
   </div>
 </header>
 
+{% if prefill %}
+<div class="flash flash-info">Dados sugeridos pela IA — revise antes de salvar.</div>
+{% endif %}
+
+{% set p = prefill or {} %}
 <form method="post" class="form-app">
   <div class="painel">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -22,15 +27,15 @@
       <div class="campo">
         <label for="tipo">Tipo de refeição</label>
         <select id="tipo" name="tipo" required>
-          <option value="" disabled selected>Escolha…</option>
-          {% for t in cfg.TIPOS_REFEICAO %}<option>{{ t }}</option>{% endfor %}
+          <option value="" disabled {% if not p.get('tipo') %}selected{% endif %}>Escolha…</option>
+          {% for t in cfg.TIPOS_REFEICAO %}<option {% if p.get('tipo') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
         </select>
       </div>
     </div>
 
     <div class="campo">
       <label for="alimentos">O que você comeu?</label>
-      <textarea id="alimentos" name="alimentos" placeholder="Ex.: arroz, feijão, frango grelhado, salada…"></textarea>
+      <textarea id="alimentos" name="alimentos" placeholder="Ex.: arroz, feijão, frango grelhado, salada…">{{ p.get('alimentos', '') }}</textarea>
     </div>
 
     <div class="bloco-escalas">
@@ -38,26 +43,26 @@
         <div class="metade-titulo">Antes da refeição</div>
         <div class="escala escala-fome">
           <span class="escala-nome">Fome</span>
-          <input type="range" name="fome_antes" min="1" max="10" value="5" data-saida="v-fa">
-          <span class="escala-valor" id="v-fa">5</span>
+          <input type="range" name="fome_antes" min="1" max="10" value="{{ p.get('fome_antes', 5) }}" data-saida="v-fa">
+          <span class="escala-valor" id="v-fa">{{ p.get('fome_antes', 5) }}</span>
         </div>
         <div class="escala escala-sac">
           <span class="escala-nome">Saciedade</span>
-          <input type="range" name="saciedade_antes" min="1" max="10" value="3" data-saida="v-sa">
-          <span class="escala-valor" id="v-sa">3</span>
+          <input type="range" name="saciedade_antes" min="1" max="10" value="{{ p.get('saciedade_antes', 3) }}" data-saida="v-sa">
+          <span class="escala-valor" id="v-sa">{{ p.get('saciedade_antes', 3) }}</span>
         </div>
       </div>
       <div class="metade">
         <div class="metade-titulo">Depois da refeição</div>
         <div class="escala escala-fome">
           <span class="escala-nome">Fome</span>
-          <input type="range" name="fome_depois" min="1" max="10" value="3" data-saida="v-fd">
-          <span class="escala-valor" id="v-fd">3</span>
+          <input type="range" name="fome_depois" min="1" max="10" value="{{ p.get('fome_depois', 3) }}" data-saida="v-fd">
+          <span class="escala-valor" id="v-fd">{{ p.get('fome_depois', 3) }}</span>
         </div>
         <div class="escala escala-sac">
           <span class="escala-nome">Saciedade</span>
-          <input type="range" name="saciedade_depois" min="1" max="10" value="8" data-saida="v-sd">
-          <span class="escala-valor" id="v-sd">8</span>
+          <input type="range" name="saciedade_depois" min="1" max="10" value="{{ p.get('saciedade_depois', 8) }}" data-saida="v-sd">
+          <span class="escala-valor" id="v-sd">{{ p.get('saciedade_depois', 8) }}</span>
         </div>
       </div>
     </div>
@@ -67,14 +72,14 @@
         <label for="sentimento_antes">Sentimento antes</label>
         <select id="sentimento_antes" name="sentimento_antes">
           <option value="">—</option>
-          {% for s in cfg.SENTIMENTOS_ANTES %}<option>{{ s }}</option>{% endfor %}
+          {% for s in cfg.SENTIMENTOS_ANTES %}<option {% if p.get('sentimento_antes') == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
         </select>
       </div>
       <div class="campo">
         <label for="sentimento_durante">Sentimento durante</label>
         <select id="sentimento_durante" name="sentimento_durante">
           <option value="">—</option>
-          {% for s in cfg.SENTIMENTOS_DURANTE %}<option>{{ s }}</option>{% endfor %}
+          {% for s in cfg.SENTIMENTOS_DURANTE %}<option {% if p.get('sentimento_durante') == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
         </select>
       </div>
     </div>
@@ -84,14 +89,14 @@
         <label for="local_refeicao">Local</label>
         <select id="local_refeicao" name="local_refeicao">
           <option value="">—</option>
-          {% for l in cfg.LOCAIS %}<option>{{ l }}</option>{% endfor %}
+          {% for l in cfg.LOCAIS %}<option {% if p.get('local_refeicao') == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
         </select>
       </div>
       <div class="campo">
         <label for="companhia">Companhia</label>
         <select id="companhia" name="companhia">
           <option value="">—</option>
-          {% for c in cfg.COMPANHIAS %}<option>{{ c }}</option>{% endfor %}
+          {% for c in cfg.COMPANHIAS %}<option {% if p.get('companhia') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
         </select>
       </div>
     </div>
@@ -99,17 +104,17 @@
     <div class="linha-2">
       <div class="campo">
         <label for="tempo_refeicao">Duração (min)</label>
-        <input type="number" id="tempo_refeicao" name="tempo_refeicao" min="0" max="600" placeholder="0" inputmode="numeric">
+        <input type="number" id="tempo_refeicao" name="tempo_refeicao" min="0" max="600" placeholder="0" inputmode="numeric" value="{{ p.get('tempo_refeicao', '') }}">
       </div>
       <div class="campo">
         <label for="agua_ml">Água (ml)</label>
-        <input type="number" id="agua_ml" name="agua_ml" min="0" max="5000" step="50" placeholder="0" inputmode="numeric">
+        <input type="number" id="agua_ml" name="agua_ml" min="0" max="5000" step="50" placeholder="0" inputmode="numeric" value="{{ p.get('agua_ml', '') }}">
       </div>
     </div>
 
     <div class="campo">
       <label for="observacoes">Observações</label>
-      <textarea id="observacoes" name="observacoes"></textarea>
+      <textarea id="observacoes" name="observacoes">{{ p.get('observacoes', '') }}</textarea>
     </div>
   </div>
 

@@ -39,6 +39,14 @@ class Config:
     # Sessão
     REMEMBER_COOKIE_DURATION = 60 * 60 * 24 * 14  # 14 dias
 
+    # IA — registro por áudio/imagem (OpenAI)
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    OPENAI_WHISPER_MODEL = os.environ.get("OPENAI_WHISPER_MODEL", "whisper-1")
+    IA_MAX_AUDIO_MB = int(os.environ.get("IA_MAX_AUDIO_MB", "8"))
+    IA_FORMATOS_AUDIO = {"webm", "ogg", "mp4", "m4a", "mpeg", "mp3", "wav"}
+    IA_FORMATOS_IMAGEM = {"jpg", "jpeg", "png", "webp", "heic", "heif"}
+
 
 # ── Listas de domínio (portadas do app desktop — manter as 4 escalas!) ──
 TIPOS_REFEICAO = ["Café da manhã", "Lanche manhã", "Almoço",

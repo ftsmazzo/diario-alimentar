@@ -51,10 +51,11 @@ def create_app():
     def injetar_nav_paciente():
         from flask_login import current_user
         from models import Arquivo
+        ctx = {"ia_habilitada": bool(app.config.get("OPENAI_API_KEY"))}
         if current_user.is_authenticated and current_user.eh_paciente:
-            return {"arquivos_novos_nav": Arquivo.query.filter_by(
-                paciente_id=current_user.id, visto_em=None).count()}
-        return {}
+            ctx["arquivos_novos_nav"] = Arquivo.query.filter_by(
+                paciente_id=current_user.id, visto_em=None).count()
+        return ctx
 
     # Blueprints
     from auth import bp_auth

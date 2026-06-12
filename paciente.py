@@ -5,13 +5,16 @@ from datetime import datetime, date, timezone
 from functools import wraps
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
-                   flash, send_from_directory, current_app, abort)
+                   flash, send_from_directory, current_app, abort, jsonify,
+                   session)
 from flask_login import login_required, current_user
 
 import config
 from models import (db, Refeicao, RegistroSono, RegistroExercicio, Arquivo,
                     Usuario, Vinculo, clamp_escala)
 from analises import buscar_registros, estatisticas, gerar_insights
+from registros_svc import salvar_refeicao, salvar_sono, salvar_exercicio, salvar_por_tipo
+import ai_registro
 
 bp_paciente = Blueprint("paciente", __name__)
 
@@ -56,6 +59,32 @@ def _duracao_sono(hora_dormir, hora_acordar):
         return 0.0
 
 
+def _rascunho_ia():
+    return session.pop("ia_rascunho", None)
+
+
+def _guardar_rascunho_ia(tipo, dados):
+    session["ia_rascunho"] = {"tipo": tipo, "dados": dados}
+
+
+def _url_formulario(tipo):
+    return {
+        "refeicao": "paciente.nova_refeicao",
+        "sono": "paciente.novo_sono",
+        "exercicio": "paciente.novo_exercicio",
+    }.get(tipo, "paciente.registrar")
+
+
+def _extensao(nome):
+    if not nome or "." not in nome:
+        return ""
+    return nome.rsplit(".", 1)[1].lower()
+
+
+def _ia_ativa():
+    return bool(current_app.config.get("OPENAI_API_KEY"))
+
+
 # ────────────────────────── hub de registro ──────────────────────────
 
 @bp_paciente.route("/registrar")
@@ -91,30 +120,35 @@ def nova_refeicao():
         if not f.get("tipo"):
             flash("Escolha o tipo de refeição.", "erro")
         else:
-            r = Refeicao(
-                usuario_id=current_user.id,
-                data_hora=_parse_data_hora(f.get("data_hora")),
-                tipo=f.get("tipo"),
-                alimentos=(f.get("alimentos") or "").strip(),
-                fome_antes=clamp_escala(f.get("fome_antes"), 5),
-                saciedade_antes=clamp_escala(f.get("saciedade_antes"), 3),
-                fome_depois=clamp_escala(f.get("fome_depois"), 3),
-                saciedade_depois=clamp_escala(f.get("saciedade_depois"), 8),
-                sentimento_antes=f.get("sentimento_antes") or "",
-                sentimento_durante=f.get("sentimento_durante") or "",
-                local_refeicao=f.get("local_refeicao") or "",
-                companhia=f.get("companhia") or "",
-                tempo_refeicao=int(f.get("tempo_refeicao") or 0),
-                agua_ml=float(f.get("agua_ml") or 0),
-                observacoes=(f.get("observacoes") or "").strip(),
-            )
-            db.session.add(r)
-            db.session.commit()
+            salvar_refeicao(current_user.id, {
+                "data_hora": f.get("data_hora"),
+                "tipo": f.get("tipo"),
+                "alimentos": f.get("alimentos"),
+                "fome_antes": f.get("fome_antes"),
+                "saciedade_antes": f.get("saciedade_antes"),
+                "fome_depois": f.get("fome_depois"),
+                "saciedade_depois": f.get("saciedade_depois"),
+                "sentimento_antes": f.get("sentimento_antes"),
+                "sentimento_durante": f.get("sentimento_durante"),
+                "local_refeicao": f.get("local_refeicao"),
+                "companhia": f.get("companhia"),
+                "tempo_refeicao": f.get("tempo_refeicao"),
+                "agua_ml": f.get("agua_ml"),
+                "observacoes": f.get("observacoes"),
+            })
             flash("Refeição registrada.", "ok")
             return redirect(url_for("paciente.dashboard"))
 
     agora = datetime.now().strftime("%Y-%m-%dT%H:%M")
-    return render_template("paciente/refeicao_form.html", cfg=config, agora=agora)
+    rascunho = _rascunho_ia()
+    prefill = rascunho["dados"] if rascunho and rascunho.get("tipo") == "refeicao" else {}
+    if prefill.get("data_hora"):
+        try:
+            agora = datetime.fromisoformat(str(prefill["data_hora"])).strftime("%Y-%m-%dT%H:%M")
+        except (TypeError, ValueError):
+            pass
+    return render_template("paciente/refeicao_form.html", cfg=config, agora=agora,
+                           prefill=prefill)
 
 
 # ────────────────────────── sono ──────────────────────────
@@ -128,23 +162,25 @@ def novo_sono():
         if not hd or not ha:
             flash("Informe os horários de dormir e acordar.", "erro")
         else:
-            s = RegistroSono(
-                usuario_id=current_user.id,
-                data=_parse_data(f.get("data")),
-                hora_dormir=hd, hora_acordar=ha,
-                duracao_horas=_duracao_sono(hd, ha),
-                qualidade=clamp_escala(f.get("qualidade"), 7),
-                como_acordou=f.get("como_acordou") or "",
-                interrupcoes=int(f.get("interrupcoes") or 0),
-                observacoes=(f.get("observacoes") or "").strip(),
-            )
-            db.session.add(s)
-            db.session.commit()
+            s = salvar_sono(current_user.id, {
+                "data": f.get("data"),
+                "hora_dormir": hd,
+                "hora_acordar": ha,
+                "qualidade": f.get("qualidade"),
+                "como_acordou": f.get("como_acordou"),
+                "interrupcoes": f.get("interrupcoes"),
+                "observacoes": f.get("observacoes"),
+            })
             flash(f"Sono registrado ({s.duracao_horas:.1f}h).", "ok")
             return redirect(url_for("paciente.dashboard"))
 
     hoje = date.today().strftime("%Y-%m-%d")
-    return render_template("paciente/sono_form.html", cfg=config, hoje=hoje)
+    rascunho = _rascunho_ia()
+    prefill = rascunho["dados"] if rascunho and rascunho.get("tipo") == "sono" else {}
+    if prefill.get("data"):
+        hoje = str(prefill["data"])[:10]
+    return render_template("paciente/sono_form.html", cfg=config, hoje=hoje,
+                           prefill=prefill)
 
 
 # ────────────────────────── exercício ──────────────────────────
@@ -157,23 +193,111 @@ def novo_exercicio():
         if not f.get("tipo") or not f.get("duracao_minutos"):
             flash("Informe o tipo e a duração do exercício.", "erro")
         else:
-            e = RegistroExercicio(
-                usuario_id=current_user.id,
-                data=_parse_data(f.get("data")),
-                tipo=f.get("tipo"),
-                atividade=(f.get("atividade") or "").strip(),
-                duracao_minutos=float(f.get("duracao_minutos") or 0),
-                intensidade=clamp_escala(f.get("intensidade"), 5),
-                sentimento_apos=f.get("sentimento_apos") or "",
-                observacoes=(f.get("observacoes") or "").strip(),
-            )
-            db.session.add(e)
-            db.session.commit()
+            salvar_exercicio(current_user.id, {
+                "data": f.get("data"),
+                "tipo": f.get("tipo"),
+                "atividade": f.get("atividade"),
+                "duracao_minutos": f.get("duracao_minutos"),
+                "intensidade": f.get("intensidade"),
+                "sentimento_apos": f.get("sentimento_apos"),
+                "observacoes": f.get("observacoes"),
+            })
             flash("Exercício registrado.", "ok")
             return redirect(url_for("paciente.dashboard"))
 
     hoje = date.today().strftime("%Y-%m-%d")
-    return render_template("paciente/exercicio_form.html", cfg=config, hoje=hoje)
+    rascunho = _rascunho_ia()
+    prefill = rascunho["dados"] if rascunho and rascunho.get("tipo") == "exercicio" else {}
+    if prefill.get("data"):
+        hoje = str(prefill["data"])[:10]
+    return render_template("paciente/exercicio_form.html", cfg=config, hoje=hoje,
+                           prefill=prefill)
+
+
+# ────────────────────────── IA — registro rápido ──────────────────────────
+
+@bp_paciente.route("/api/ia/audio", methods=["POST"])
+@apenas_paciente
+def ia_audio():
+    if not _ia_ativa():
+        return jsonify({"ok": False, "erro": "Registro por voz não está disponível no momento."}), 503
+
+    arquivo = request.files.get("audio")
+    if not arquivo or not arquivo.filename:
+        return jsonify({"ok": False, "erro": "Envie um áudio."}), 400
+
+    ext = _extensao(arquivo.filename)
+    if ext not in current_app.config["IA_FORMATOS_AUDIO"]:
+        return jsonify({"ok": False, "erro": "Formato de áudio não suportado."}), 400
+
+    limite = current_app.config["IA_MAX_AUDIO_MB"] * 1024 * 1024
+    dados = arquivo.read()
+    if len(dados) > limite:
+        return jsonify({"ok": False, "erro": f"Áudio muito grande (máx. {current_app.config['IA_MAX_AUDIO_MB']} MB)."}), 400
+
+    try:
+        resultado = ai_registro.interpretar_audio(dados, arquivo.filename)
+        return jsonify({"ok": True, **resultado})
+    except Exception as exc:
+        current_app.logger.exception("IA áudio")
+        return jsonify({"ok": False, "erro": str(exc)}), 500
+
+
+@bp_paciente.route("/api/ia/imagem", methods=["POST"])
+@apenas_paciente
+def ia_imagem():
+    if not _ia_ativa():
+        return jsonify({"ok": False, "erro": "Registro por foto não está disponível no momento."}), 503
+
+    arquivo = request.files.get("imagem")
+    if not arquivo or not arquivo.filename:
+        return jsonify({"ok": False, "erro": "Envie uma imagem."}), 400
+
+    ext = _extensao(arquivo.filename)
+    if ext not in current_app.config["IA_FORMATOS_IMAGEM"]:
+        return jsonify({"ok": False, "erro": "Use JPG, PNG ou WEBP."}), 400
+
+    dados = arquivo.read()
+    if len(dados) > current_app.config["MAX_CONTENT_LENGTH"]:
+        return jsonify({"ok": False, "erro": "Imagem muito grande."}), 400
+
+    mime = arquivo.mimetype or f"image/{'jpeg' if ext in ('jpg', 'jpeg') else ext}"
+    try:
+        resultado = ai_registro.interpretar_imagem(dados, mime)
+        return jsonify({"ok": True, **resultado})
+    except Exception as exc:
+        current_app.logger.exception("IA imagem")
+        return jsonify({"ok": False, "erro": str(exc)}), 500
+
+
+@bp_paciente.route("/api/ia/salvar", methods=["POST"])
+@apenas_paciente
+def ia_salvar():
+    payload = request.get_json(silent=True) or {}
+    tipo = payload.get("tipo")
+    dados = payload.get("dados") or {}
+    if tipo not in ("refeicao", "sono", "exercicio"):
+        return jsonify({"ok": False, "erro": "Tipo de registro inválido."}), 400
+    try:
+        salvar_por_tipo(current_user.id, tipo, dados)
+        return jsonify({"ok": True, "redirect": url_for("paciente.dashboard")})
+    except ValueError as exc:
+        return jsonify({"ok": False, "erro": str(exc)}), 400
+    except Exception as exc:
+        current_app.logger.exception("IA salvar")
+        return jsonify({"ok": False, "erro": "Não foi possível salvar o registro."}), 500
+
+
+@bp_paciente.route("/api/ia/editar", methods=["POST"])
+@apenas_paciente
+def ia_editar():
+    payload = request.get_json(silent=True) or {}
+    tipo = payload.get("tipo")
+    dados = payload.get("dados") or {}
+    if tipo not in ("refeicao", "sono", "exercicio"):
+        return jsonify({"ok": False, "erro": "Tipo inválido."}), 400
+    _guardar_rascunho_ia(tipo, dados)
+    return jsonify({"ok": True, "redirect": url_for(_url_formulario(tipo))})
 
 
 # ────────────────────────── histórico ──────────────────────────
