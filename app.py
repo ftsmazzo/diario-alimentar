@@ -9,13 +9,14 @@ Execução local:
     pip install -r requirements.txt
     python app.py            →  http://localhost:5000
 
-Produção (Railway/Render):
-    gunicorn app:app         (defina SECRET_KEY e DATABASE_URL no ambiente)
+Produção (Docker / EasyPanel):
+    ./entrypoint.sh         → migrations + bootstrap + gunicorn
 """
 import os
 
 from flask import Flask, redirect, url_for
 from flask_login import LoginManager, current_user
+from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 
 from config import Config
@@ -23,6 +24,7 @@ from models import db, Usuario
 
 csrf = CSRFProtect()
 login_manager = LoginManager()
+migrate = Migrate()
 
 
 def create_app():
@@ -34,6 +36,7 @@ def create_app():
                              "instance"), exist_ok=True)
 
     db.init_app(app)
+    migrate.init_app(app, db)
     csrf.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
@@ -59,9 +62,6 @@ def create_app():
                 else "paciente.dashboard"
             return redirect(url_for(destino))
         return redirect(url_for("auth.login"))
-
-    with app.app_context():
-        db.create_all()
 
     return app
 

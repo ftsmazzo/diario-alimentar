@@ -6,9 +6,13 @@ import os
 
 os.environ["UPLOAD_FOLDER"] = "/tmp/uploads_teste"
 import app as modulo_app
+from models import db
 
 aplicacao = modulo_app.app
 aplicacao.config["WTF_CSRF_ENABLED"] = False  # simplifica o teste
+
+with aplicacao.app_context():
+    db.create_all()
 falhas = []
 
 

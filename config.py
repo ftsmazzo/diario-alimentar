@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """Configuração central da aplicação.
 
-Local:     SQLite (zero configuração — basta rodar)
-Produção:  defina DATABASE_URL (PostgreSQL) e SECRET_KEY como
-           variáveis de ambiente no Railway/Render.
+Local:     SQLite (zero configuração — basta rodar `flask db upgrade`)
+Produção:  defina DATABASE_URL (PostgreSQL), SECRET_KEY e use o
+           Dockerfile (migrations + bootstrap no entrypoint).
 """
 import os
 from dotenv import load_dotenv
@@ -26,6 +26,10 @@ class Config:
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
 
     # Arquivos enviados pelo nutricionista (cardápios, exames, treinos)
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", os.path.join(BASE_DIR, "uploads"))

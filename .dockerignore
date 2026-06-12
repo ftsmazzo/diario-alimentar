@@ -1,0 +1,12 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.env
+instance/
+uploads/
+.venv/
+venv/
+*.md
+teste_e2e.py

@@ -15,11 +15,13 @@ no painel).
 
 ```bash
 pip install -r requirements.txt
+export FLASK_APP=app:app   # Windows: set FLASK_APP=app:app
+flask db upgrade
 python app.py
 # → http://localhost:5000
 ```
 
-Banco SQLite criado automaticamente em `instance/diario.db`.
+Banco SQLite em `instance/diario.db` (criado pela migration).
 Para testar, crie uma conta de nutricionista, copie o código de convite
 e crie uma conta de paciente usando esse código (use outro navegador ou
 janela anônima para manter as duas sessões).
@@ -37,29 +39,78 @@ analises.py         estatísticas, insights e alertas (portados do desktop)
 auth.py             cadastro (LGPD), login, logout
 paciente.py         rotas do paciente
 nutricionista.py    rotas do nutricionista (gráficos via JSON + Chart.js)
+deploy/             wait_db, bootstrap do primeiro usuário
+entrypoint.sh       migrations + bootstrap + gunicorn (deploy)
+Dockerfile          build de produção
+migrations/         Alembic / Flask-Migrate
 templates/          Jinja2 — base, auth, paciente, nutri
 static/             CSS (identidade visual) e JS leve
-uploads/            arquivos enviados (em produção, ver nota abaixo)
+uploads/            arquivos enviados (volume persistente em produção)
 ```
 
-## Deploy em produção (Railway) com domínio próprio
+## Deploy com Docker (EasyPanel)
 
-1. Suba o código para um repositório GitHub.
-2. No [Railway](https://railway.app): **New Project → Deploy from GitHub**.
-3. Adicione um banco: **New → Database → PostgreSQL**
-   (a variável `DATABASE_URL` é injetada automaticamente).
-4. Em *Variables* do serviço web, defina:
-   - `SECRET_KEY` → string longa e aleatória
-     (`python -c "import secrets; print(secrets.token_hex(32))"`)
-5. Descomente `psycopg2-binary` no `requirements.txt`.
-6. Comando de start (Procfile já incluído): `gunicorn app:app`
-7. Em *Settings → Networking → Custom Domain*, adicione seu domínio e
-   crie o registro CNAME no seu provedor (Registro.br, GoDaddy etc.).
-   O HTTPS é emitido automaticamente.
+### Serviços no projeto EasyPanel
 
-**Arquivos enviados:** o disco do Railway/Render é efêmero — em produção
-real, migre os uploads para um storage externo (Cloudflare R2 ou AWS S3).
-Está no roadmap da Fase 2; localmente e em testes a pasta `uploads/` basta.
+| Serviço | Obrigatório |
+|---------|-------------|
+| **PostgreSQL** | Sim — criar **antes** do App |
+| **App** (GitHub + Dockerfile) | Sim |
+| Redis, MySQL, etc. | Não |
+
+### 1. PostgreSQL
+
+- **+ Service → PostgreSQL**
+- Anote host interno, usuário, senha e nome do banco
+
+### 2. App
+
+- **+ Service → App**
+- Source: GitHub → `ftsmazzo/diario-alimentar`
+- Build: **Dockerfile** (caminho: `Dockerfile`)
+- **Domains & Proxy → Port:** `8000`
+
+### 3. Variáveis de ambiente
+
+| Variável | Descrição |
+|----------|-----------|
+| `SECRET_KEY` | Chave longa aleatória |
+| `DATABASE_URL` | `postgresql://user:pass@HOST_POSTGRES:5432/banco` |
+| `PORT` | `8000` (padrão do container) |
+| `UPLOAD_FOLDER` | `/app/uploads` |
+| `ADMIN_EMAIL` | E-mail do primeiro nutricionista (bootstrap) |
+| `ADMIN_PASSWORD` | Senha (mín. 8 caracteres) |
+| `ADMIN_NAME` | Nome (opcional) |
+
+O bootstrap só roda se o banco **não tiver usuários**. O primeiro login
+é um **nutricionista** (perfil profissional do sistema). O código de
+convite aparece nos logs do deploy.
+
+### 4. Volume de uploads (recomendado)
+
+App → **Mounts → Volume**
+
+- `mountPath`: `/app/uploads`
+
+Sem volume, arquivos enviados pelo nutricionista se perdem em redeploy.
+
+### 5. O que acontece em cada deploy
+
+O `entrypoint.sh` executa automaticamente:
+
+1. Aguarda o PostgreSQL ficar disponível
+2. `flask db upgrade` — aplica migrations pendentes
+3. Bootstrap do primeiro nutricionista (se `ADMIN_*` definidos e banco vazio)
+4. Inicia Gunicorn na porta `8000`
+
+### Nova migration (desenvolvimento)
+
+```bash
+export FLASK_APP=app:app
+flask db migrate -m "descricao da mudanca"
+flask db upgrade
+git add migrations/ && git commit && git push
+```
 
 ## LGPD — pontos já implementados
 
