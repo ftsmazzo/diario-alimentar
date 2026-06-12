@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titulo %}Histórico{% endblock %}
+{% block conteudo %}
+<div class="topo-secao">
+  <h1>Histórico</h1>
+  <form method="get" style="display:flex;gap:8px;align-items:center">
+    <label for="dias" style="margin:0">Período</label>
+    <select id="dias" name="dias" onchange="this.form.submit()">
+      {% for d in [7, 14, 30, 60, 90, 180, 365] %}
+        <option value="{{ d }}" {% if dias == d %}selected{% endif %}>{{ d }} dias</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<h2>Refeições ({{ refeicoes|length }})</h2>
+<div class="painel tabela-rolagem">
+  {% if refeicoes %}
+  <table>
+    <thead><tr><th>Quando</th><th>Tipo</th><th>Alimentos</th><th>Fome</th><th>Saciedade</th><th>Efet.</th><th>Sentimentos</th></tr></thead>
+    <tbody>
+      {% for r in refeicoes %}
+      <tr>
+        <td>{{ r.data_hora.strftime('%d/%m %H:%M') }}</td>
+        <td>{{ r.tipo }}</td>
+        <td style="max-width:240px">{{ r.alimentos[:90] }}{% if r.alimentos|length > 90 %}…{% endif %}</td>
+        <td><span class="chip-escala chip-fome">{{ r.fome_antes }} <span class="chip-seta">→</span> {{ r.fome_depois }}</span></td>
+        <td><span class="chip-escala chip-sac">{{ r.saciedade_antes }} <span class="chip-seta">→</span> {{ r.saciedade_depois }}</span></td>
+        <td>{{ '%.0f'|format(r.efetividade) }}%</td>
+        <td class="suave">{{ r.sentimento_antes }}{% if r.sentimento_durante %} · {{ r.sentimento_durante }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="vazio">Sem refeições no período.</div>{% endif %}
+</div>
+
+<h2>Sono ({{ sono|length }})</h2>
+<div class="painel tabela-rolagem">
+  {% if sono %}
+  <table>
+    <thead><tr><th>Data</th><th>Dormiu</th><th>Acordou</th><th>Duração</th><th>Qualidade</th><th>Interrupções</th><th>Como acordou</th></tr></thead>
+    <tbody>
+      {% for s in sono %}
+      <tr>
+        <td>{{ s.data.strftime('%d/%m/%Y') }}</td>
+        <td>{{ s.hora_dormir }}</td>
+        <td>{{ s.hora_acordar }}</td>
+        <td>{{ '%.1f'|format(s.duracao_horas) }}h</td>
+        <td>{{ s.qualidade }}/10</td>
+        <td>{{ s.interrupcoes }}</td>
+        <td class="suave">{{ s.como_acordou }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="vazio">Sem registros de sono no período.</div>{% endif %}
+</div>
+
+<h2>Exercícios ({{ exercicios|length }})</h2>
+<div class="painel tabela-rolagem">
+  {% if exercicios %}
+  <table>
+    <thead><tr><th>Data</th><th>Tipo</th><th>Atividade</th><th>Duração</th><th>Intensidade</th><th>Sentimento</th></tr></thead>
+    <tbody>
+      {% for e in exercicios %}
+      <tr>
+        <td>{{ e.data.strftime('%d/%m/%Y') }}</td>
+        <td>{{ e.tipo }}</td>
+        <td>{{ e.atividade }}</td>
+        <td>{{ '%.0f'|format(e.duracao_minutos) }} min</td>
+        <td>{{ e.intensidade }}/10</td>
+        <td class="suave">{{ e.sentimento_apos }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="vazio">Sem exercícios no período.</div>{% endif %}
+</div>
+{% endblock %}

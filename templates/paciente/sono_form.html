@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar sono{% endblock %}
+{% block conteudo %}
+<h1>Registrar sono</h1>
+<form method="post" class="painel" style="max-width:560px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="campo">
+    <label for="data">Data (noite de)</label>
+    <input type="date" id="data" name="data" value="{{ hoje }}" required>
+  </div>
+
+  <div class="linha-2">
+    <div class="campo">
+      <label for="hora_dormir">Hora que dormiu</label>
+      <input type="time" id="hora_dormir" name="hora_dormir" required>
+    </div>
+    <div class="campo">
+      <label for="hora_acordar">Hora que acordou</label>
+      <input type="time" id="hora_acordar" name="hora_acordar" required>
+    </div>
+  </div>
+
+  <div class="bloco-escalas">
+    <div class="metade">
+      <div class="metade-titulo">Qualidade do sono</div>
+      <div class="escala">
+        <span class="escala-nome cor-sono">Qualidade</span>
+        <input type="range" name="qualidade" min="1" max="10" value="7" data-saida="v-q">
+        <span class="escala-valor" id="v-q" style="color:var(--sono);background:var(--info-claro)">7</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="linha-2">
+    <div class="campo">
+      <label for="como_acordou">Como acordou</label>
+      <select id="como_acordou" name="como_acordou">
+        <option value="">—</option>
+        {% for c in cfg.COMO_ACORDOU %}<option>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="interrupcoes">Interrupções na noite</label>
+      <input type="number" id="interrupcoes" name="interrupcoes" min="0" max="30" value="0">
+    </div>
+  </div>
+
+  <div class="campo">
+    <label for="observacoes">Observações</label>
+    <textarea id="observacoes" name="observacoes"></textarea>
+  </div>
+
+  <button class="btn btn-primario" type="submit">Salvar sono</button>
+  <a class="btn" href="{{ url_for('paciente.dashboard') }}">Cancelar</a>
+</form>
+{% endblock %}

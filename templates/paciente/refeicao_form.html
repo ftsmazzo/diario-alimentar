@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titulo %}Nova refeição{% endblock %}
+{% block conteudo %}
+<h1>Nova refeição</h1>
+<form method="post" class="painel" style="max-width:680px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="linha-2">
+    <div class="campo">
+      <label for="data_hora">Data e hora</label>
+      <input type="datetime-local" id="data_hora" name="data_hora" value="{{ agora }}" required>
+    </div>
+    <div class="campo">
+      <label for="tipo">Tipo de refeição</label>
+      <select id="tipo" name="tipo" required>
+        <option value="" disabled selected>Escolha…</option>
+        {% for t in cfg.TIPOS_REFEICAO %}<option>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="campo">
+    <label for="alimentos">O que você comeu?</label>
+    <textarea id="alimentos" name="alimentos" placeholder="Ex.: arroz, feijão, frango grelhado, salada…"></textarea>
+  </div>
+
+  <!-- ── AS 4 ESCALAS ── -->
+  <div class="bloco-escalas">
+    <div class="metade">
+      <div class="metade-titulo">Antes da refeição</div>
+      <div class="escala escala-fome">
+        <span class="escala-nome">Fome</span>
+        <input type="range" name="fome_antes" min="1" max="10" value="5" data-saida="v-fa">
+        <span class="escala-valor" id="v-fa">5</span>
+      </div>
+      <div class="escala escala-sac">
+        <span class="escala-nome">Saciedade</span>
+        <input type="range" name="saciedade_antes" min="1" max="10" value="3" data-saida="v-sa">
+        <span class="escala-valor" id="v-sa">3</span>
+      </div>
+    </div>
+    <div class="metade">
+      <div class="metade-titulo">Depois da refeição</div>
+      <div class="escala escala-fome">
+        <span class="escala-nome">Fome</span>
+        <input type="range" name="fome_depois" min="1" max="10" value="3" data-saida="v-fd">
+        <span class="escala-valor" id="v-fd">3</span>
+      </div>
+      <div class="escala escala-sac">
+        <span class="escala-nome">Saciedade</span>
+        <input type="range" name="saciedade_depois" min="1" max="10" value="8" data-saida="v-sd">
+        <span class="escala-valor" id="v-sd">8</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="linha-2">
+    <div class="campo">
+      <label for="sentimento_antes">Sentimento antes</label>
+      <select id="sentimento_antes" name="sentimento_antes">
+        <option value="">—</option>
+        {% for s in cfg.SENTIMENTOS_ANTES %}<option>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="sentimento_durante">Sentimento durante</label>
+      <select id="sentimento_durante" name="sentimento_durante">
+        <option value="">—</option>
+        {% for s in cfg.SENTIMENTOS_DURANTE %}<option>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="linha-2">
+    <div class="campo">
+      <label for="local_refeicao">Local</label>
+      <select id="local_refeicao" name="local_refeicao">
+        <option value="">—</option>
+        {% for l in cfg.LOCAIS %}<option>{{ l }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="companhia">Companhia</label>
+      <select id="companhia" name="companhia">
+        <option value="">—</option>
+        {% for c in cfg.COMPANHIAS %}<option>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="linha-2">
+    <div class="campo">
+      <label for="tempo_refeicao">Duração (min)</label>
+      <input type="number" id="tempo_refeicao" name="tempo_refeicao" min="0" max="600" placeholder="0">
+    </div>
+    <div class="campo">
+      <label for="agua_ml">Água (ml)</label>
+      <input type="number" id="agua_ml" name="agua_ml" min="0" max="5000" step="50" placeholder="0">
+    </div>
+  </div>
+
+  <div class="campo">
+    <label for="observacoes">Observações</label>
+    <textarea id="observacoes" name="observacoes"></textarea>
+  </div>
+
+  <button class="btn btn-primario" type="submit">Salvar refeição</button>
+  <a class="btn" href="{{ url_for('paciente.dashboard') }}">Cancelar</a>
+</form>
+{% endblock %}

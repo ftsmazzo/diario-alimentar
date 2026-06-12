@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Arquivos{% endblock %}
+{% block conteudo %}
+<h1>Arquivos do nutricionista</h1>
+<div class="painel tabela-rolagem">
+  {% if arquivos %}
+  <table>
+    <thead><tr><th>Recebido em</th><th>Categoria</th><th>Arquivo</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+      {% for a in arquivos %}
+      <tr>
+        <td>{{ a.enviado_em.strftime('%d/%m/%Y') }}
+            {% if not a.visto_em %}<span class="badge-novo">novo</span>{% endif %}</td>
+        <td>{{ a.categoria }}</td>
+        <td>{{ a.nome_original }}</td>
+        <td class="suave">{{ a.descricao }}</td>
+        <td><a class="btn btn-contorno btn-mini"
+               href="{{ url_for('paciente.baixar_arquivo', arquivo_id=a.id) }}">Baixar</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="vazio">Nenhum arquivo recebido ainda. Quando seu nutricionista
+    enviar um cardápio, pedido de exames ou plano de treino, ele aparecerá aqui.</div>
+  {% endif %}
+</div>
+{% endblock %}

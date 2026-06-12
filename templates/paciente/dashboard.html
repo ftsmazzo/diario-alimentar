@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+<div class="topo-secao">
+  <h1>Olá, {{ current_user.nome.split(' ')[0] }}</h1>
+  {% if arquivos_novos %}
+    <a class="btn btn-contorno btn-mini" href="{{ url_for('paciente.arquivos') }}">
+      Arquivos do nutricionista <span class="badge-novo">{{ arquivos_novos }} novo{{ 's' if arquivos_novos > 1 }}</span>
+    </a>
+  {% endif %}
+</div>
+
+<div class="acoes-rapidas">
+  <a class="btn btn-primario" href="{{ url_for('paciente.nova_refeicao') }}">+ Refeição</a>
+  <a class="btn btn-contorno" href="{{ url_for('paciente.novo_sono') }}">+ Sono</a>
+  <a class="btn btn-contorno" href="{{ url_for('paciente.novo_exercicio') }}">+ Exercício</a>
+</div>
+
+<h2>Últimos 7 dias</h2>
+<div class="grade-cards">
+  <div class="card">
+    <div class="card-num cor-mata">{{ stats.refeicoes.total }}</div>
+    <div class="card-rotulo">Refeições</div>
+  </div>
+  <div class="card">
+    <div class="card-num cor-fome">{{ '%.1f'|format(stats.refeicoes.fome_antes_media) }}</div>
+    <div class="card-rotulo">Fome antes (média)</div>
+  </div>
+  <div class="card">
+    <div class="card-num cor-sac">{{ '%.1f'|format(stats.refeicoes.sac_depois_media) }}</div>
+    <div class="card-rotulo">Saciedade depois (média)</div>
+  </div>
+  <div class="card">
+    <div class="card-num cor-mata">{{ '%.0f'|format(stats.refeicoes.efetividade_media) }}%</div>
+    <div class="card-rotulo">Efetividade média</div>
+  </div>
+  <div class="card">
+    <div class="card-num cor-sono">{{ '%.1f'|format(stats.sono.duracao_media) }}h</div>
+    <div class="card-rotulo">Sono médio</div>
+  </div>
+  <div class="card">
+    <div class="card-num cor-exe">{{ '%.0f'|format(stats.exercicios.minutos_total) }}</div>
+    <div class="card-rotulo">Min de exercício</div>
+  </div>
+</div>
+
+{% if ultimas %}
+<h2>Últimas refeições</h2>
+<div class="painel tabela-rolagem">
+  <table>
+    <thead>
+      <tr><th>Quando</th><th>Tipo</th><th>Fome</th><th>Saciedade</th><th>Efetividade</th></tr>
+    </thead>
+    <tbody>
+      {% for r in ultimas %}
+      <tr>
+        <td>{{ r.data_hora.strftime('%d/%m %H:%M') }}</td>
+        <td>{{ r.tipo }}</td>
+        <td><span class="chip-escala chip-fome">{{ r.fome_antes }} <span class="chip-seta">→</span> {{ r.fome_depois }}</span></td>
+        <td><span class="chip-escala chip-sac">{{ r.saciedade_antes }} <span class="chip-seta">→</span> {{ r.saciedade_depois }}</span></td>
+        <td>{{ '%.0f'|format(r.efetividade) }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2>Observações da semana</h2>
+<div class="painel">
+  <ul class="lista-insights">
+    {% for i in insights %}<li>{{ i }}</li>{% endfor %}
+  </ul>
+</div>
+
+{% if not nutri %}
+<h2>Vincular nutricionista</h2>
+<div class="painel">
+  <p class="suave">Tem um código de convite? Vincule-se para que seu
+    nutricionista acompanhe sua rotina e envie materiais.</p>
+  <form method="post" action="{{ url_for('paciente.vincular') }}" class="linha-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="codigo_convite" maxlength="6" placeholder="Código (ex.: A7K2MX)"
+           style="text-transform:uppercase" required>
+    <button class="btn btn-primario" type="submit">Vincular</button>
+  </form>
+</div>
+{% else %}
+<p class="suave">Acompanhamento: {{ nutri.nome }}</p>
+{% endif %}
+{% endblock %}
