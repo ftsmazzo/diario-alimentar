@@ -52,8 +52,9 @@ def dashboard():
     resumo = []
     for p in pacientes:
         ultima = (Refeicao.query.filter_by(usuario_id=p.id)
+                  .filter(Refeicao.enviado_nutri_em.isnot(None))
                   .order_by(Refeicao.data_hora.desc()).first())
-        total_7d = len(buscar_registros(p.id, dias=7)[0])
+        total_7d = len(buscar_registros(p.id, dias=7, somente_enviados=True)[0])
         resumo.append({"paciente": p, "ultima": ultima, "refeicoes_7d": total_7d})
     return render_template("nutri/dashboard.html", resumo=resumo,
                            codigo=current_user.codigo_convite)
@@ -68,7 +69,8 @@ def paciente_detalhe(paciente_id):
     dias = request.args.get("dias", 30, type=int)
     dias = max(7, min(365, dias))
 
-    refeicoes, sono, exercicios = buscar_registros(paciente.id, dias=dias)
+    refeicoes, sono, exercicios = buscar_registros(paciente.id, dias=dias,
+                                                   somente_enviados=True)
     stats = estatisticas(refeicoes, sono, exercicios)
     insights = gerar_insights(refeicoes, sono, exercicios)
     alertas = alertas_bem_estar(refeicoes)
@@ -92,7 +94,8 @@ def paciente_dados(paciente_id):
     paciente = _paciente_autorizado(paciente_id)
     dias = request.args.get("dias", 30, type=int)
     dias = max(7, min(365, dias))
-    refeicoes, sono, exercicios = buscar_registros(paciente.id, dias=dias)
+    refeicoes, sono, exercicios = buscar_registros(paciente.id, dias=dias,
+                                                   somente_enviados=True)
     return jsonify(series_para_graficos(refeicoes, sono, exercicios))
 
 

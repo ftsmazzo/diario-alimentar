@@ -140,6 +140,12 @@ class Refeicao(db.Model):
     agua_ml = db.Column(db.Float, default=0.0)
     observacoes = db.Column(db.Text, default="")
     criado_em = db.Column(db.DateTime, default=agora)
+    # Null = rascunho (só o paciente vê). Preenchido = enviado ao nutricionista (bloqueado).
+    enviado_nutri_em = db.Column(db.DateTime, nullable=True, index=True)
+
+    @property
+    def eh_rascunho(self):
+        return self.enviado_nutri_em is None
 
     @property
     def efetividade(self):
@@ -166,6 +172,11 @@ class RegistroSono(db.Model):
     interrupcoes = db.Column(db.Integer, default=0)
     observacoes = db.Column(db.Text, default="")
     criado_em = db.Column(db.DateTime, default=agora)
+    enviado_nutri_em = db.Column(db.DateTime, nullable=True, index=True)
+
+    @property
+    def eh_rascunho(self):
+        return self.enviado_nutri_em is None
 
 
 class RegistroExercicio(db.Model):
@@ -182,6 +193,11 @@ class RegistroExercicio(db.Model):
     sentimento_apos = db.Column(db.String(40), default="")
     observacoes = db.Column(db.Text, default="")
     criado_em = db.Column(db.DateTime, default=agora)
+    enviado_nutri_em = db.Column(db.DateTime, nullable=True, index=True)
+
+    @property
+    def eh_rascunho(self):
+        return self.enviado_nutri_em is None
 
 
 # ════════════════════════════════════════════════════════════════

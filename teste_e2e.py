@@ -59,7 +59,7 @@ with aplicacao.test_client() as pac:
         "sentimento_antes": "Ansioso", "sentimento_durante": "Satisfeito",
         "local_refeicao": "Casa", "companhia": "Família",
         "tempo_refeicao": 25, "agua_ml": 300}, follow_redirects=True)
-    checa("Refeição registrada" in r.get_data(as_text=True), "refeição salva")
+    checa("salva" in r.get_data(as_text=True).lower(), "refeição salva como rascunho")
 
     r = pac.post("/paciente/sono/novo", data={
         "data": "2026-06-10", "hora_dormir": "23:00", "hora_acordar": "06:30",
@@ -71,10 +71,33 @@ with aplicacao.test_client() as pac:
         "data": "2026-06-10", "tipo": "Aeróbico", "atividade": "Caminhada",
         "duracao_minutos": 40, "intensidade": 6, "sentimento_apos": "Energizado"},
         follow_redirects=True)
-    checa("Exercício registrado" in r.get_data(as_text=True), "exercício salvo")
+    checa("salvo" in r.get_data(as_text=True).lower(), "exercício salvo como rascunho")
 
     for rota in ["/paciente/", "/paciente/historico", "/paciente/arquivos"]:
         checa(pac.get(rota).status_code == 200, f"tela paciente {rota}")
+
+    r = pac.get("/paciente/historico")
+    html_hist = r.get_data(as_text=True)
+    checa("Rascunho" in html_hist and "Enviar" in html_hist,
+          "histórico mostra rascunho com botão enviar")
+
+    # nutri ainda não vê registros não enviados
+    with aplicacao.test_client() as nutri_pre:
+        nutri_pre.post("/login", data={"email": "ana@nutri.com", "senha": "senha12345"})
+        r = nutri_pre.get("/nutri/paciente/2?dias=30")
+        checa("Almoço" not in r.get_data(as_text=True),
+              "nutri não vê refeição antes do envio")
+
+    # enviar registros ao nutricionista
+    r = pac.post("/paciente/refeicao/1/enviar", follow_redirects=True)
+    checa("enviada" in r.get_data(as_text=True).lower(), "refeição enviada ao nutri")
+    pac.post("/paciente/sono/1/enviar", follow_redirects=True)
+    pac.post("/paciente/exercicio/1/enviar", follow_redirects=True)
+
+    # edição bloqueada após envio
+    r = pac.get("/paciente/refeicao/1/editar", follow_redirects=True)
+    checa("não pode mais ser editado" in r.get_data(as_text=True),
+          "edição bloqueada após envio")
 
     # paciente NÃO acessa área do nutricionista
     r = pac.get("/nutri/", follow_redirects=False)

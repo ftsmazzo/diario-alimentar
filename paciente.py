@@ -13,7 +13,9 @@ import config
 from models import (db, Refeicao, RegistroSono, RegistroExercicio, Arquivo,
                     Usuario, Vinculo, clamp_escala)
 from analises import buscar_registros, estatisticas, gerar_insights
-from registros_svc import salvar_refeicao, salvar_sono, salvar_exercicio, salvar_por_tipo
+from registros_svc import (salvar_refeicao, salvar_sono, salvar_exercicio, salvar_por_tipo,
+                           atualizar_refeicao, atualizar_sono, atualizar_exercicio,
+                           enviar_ao_nutri)
 import ai_registro
 
 bp_paciente = Blueprint("paciente", __name__)
@@ -85,6 +87,30 @@ def _ia_ativa():
     return bool(current_app.config.get("OPENAI_API_KEY"))
 
 
+def _registro_do_paciente(modelo, registro_id):
+    return modelo.query.filter_by(id=registro_id,
+                                  usuario_id=current_user.id).first_or_404()
+
+
+def _bloqueado_se_enviado(registro):
+    if not registro.eh_rascunho:
+        flash("Este registro já foi enviado ao nutricionista e não pode mais ser editado.",
+              "erro")
+        return redirect(url_for("paciente.historico"))
+    return None
+
+
+def _contar_rascunhos(usuario_id):
+    return (
+        Refeicao.query.filter_by(usuario_id=usuario_id)
+        .filter(Refeicao.enviado_nutri_em.is_(None)).count()
+        + RegistroSono.query.filter_by(usuario_id=usuario_id)
+        .filter(RegistroSono.enviado_nutri_em.is_(None)).count()
+        + RegistroExercicio.query.filter_by(usuario_id=usuario_id)
+        .filter(RegistroExercicio.enviado_nutri_em.is_(None)).count()
+    )
+
+
 # ────────────────────────── hub de registro ──────────────────────────
 
 @bp_paciente.route("/registrar")
@@ -105,9 +131,11 @@ def dashboard():
         paciente_id=current_user.id, visto_em=None).count()
     nutri = current_user.nutricionista()
     ultimas = sorted(refeicoes, key=lambda r: r.data_hora, reverse=True)[:5]
+    rascunhos = _contar_rascunhos(current_user.id)
     return render_template("paciente/dashboard.html", stats=stats,
                            insights=insights, ultimas=ultimas,
-                           arquivos_novos=arquivos_novos, nutri=nutri)
+                           arquivos_novos=arquivos_novos, nutri=nutri,
+                           rascunhos=rascunhos)
 
 
 # ────────────────────────── refeição ──────────────────────────
@@ -136,8 +164,9 @@ def nova_refeicao():
                 "agua_ml": f.get("agua_ml"),
                 "observacoes": f.get("observacoes"),
             })
-            flash("Refeição registrada.", "ok")
-            return redirect(url_for("paciente.dashboard"))
+            flash("Refeição salva. Revise no histórico e envie ao nutricionista quando estiver pronta.",
+                  "ok")
+            return redirect(url_for("paciente.historico"))
 
     agora = datetime.now().strftime("%Y-%m-%dT%H:%M")
     rascunho = _rascunho_ia()
@@ -148,7 +177,74 @@ def nova_refeicao():
         except (TypeError, ValueError):
             pass
     return render_template("paciente/refeicao_form.html", cfg=config, agora=agora,
-                           prefill=prefill)
+                           prefill=prefill, registro=None)
+
+
+@bp_paciente.route("/refeicao/<int:refeicao_id>/editar", methods=["GET", "POST"])
+@apenas_paciente
+def editar_refeicao(refeicao_id):
+    r = _registro_do_paciente(Refeicao, refeicao_id)
+    bloqueio = _bloqueado_se_enviado(r)
+    if bloqueio:
+        return bloqueio
+
+    if request.method == "POST":
+        f = request.form
+        if not f.get("tipo"):
+            flash("Escolha o tipo de refeição.", "erro")
+        else:
+            try:
+                atualizar_refeicao(r, {
+                    "data_hora": f.get("data_hora"),
+                    "tipo": f.get("tipo"),
+                    "alimentos": f.get("alimentos"),
+                    "fome_antes": f.get("fome_antes"),
+                    "saciedade_antes": f.get("saciedade_antes"),
+                    "fome_depois": f.get("fome_depois"),
+                    "saciedade_depois": f.get("saciedade_depois"),
+                    "sentimento_antes": f.get("sentimento_antes"),
+                    "sentimento_durante": f.get("sentimento_durante"),
+                    "local_refeicao": f.get("local_refeicao"),
+                    "companhia": f.get("companhia"),
+                    "tempo_refeicao": f.get("tempo_refeicao"),
+                    "agua_ml": f.get("agua_ml"),
+                    "observacoes": f.get("observacoes"),
+                })
+                flash("Refeição atualizada.", "ok")
+                return redirect(url_for("paciente.historico"))
+            except ValueError as exc:
+                flash(str(exc), "erro")
+
+    prefill = {
+        "tipo": r.tipo,
+        "alimentos": r.alimentos,
+        "fome_antes": r.fome_antes,
+        "saciedade_antes": r.saciedade_antes,
+        "fome_depois": r.fome_depois,
+        "saciedade_depois": r.saciedade_depois,
+        "sentimento_antes": r.sentimento_antes,
+        "sentimento_durante": r.sentimento_durante,
+        "local_refeicao": r.local_refeicao,
+        "companhia": r.companhia,
+        "tempo_refeicao": r.tempo_refeicao,
+        "agua_ml": r.agua_ml,
+        "observacoes": r.observacoes,
+    }
+    agora = r.data_hora.strftime("%Y-%m-%dT%H:%M")
+    return render_template("paciente/refeicao_form.html", cfg=config, agora=agora,
+                           prefill=prefill, registro=r)
+
+
+@bp_paciente.route("/refeicao/<int:refeicao_id>/enviar", methods=["POST"])
+@apenas_paciente
+def enviar_refeicao(refeicao_id):
+    r = _registro_do_paciente(Refeicao, refeicao_id)
+    if r.eh_rascunho:
+        enviar_ao_nutri(r)
+        flash("Refeição enviada ao nutricionista.", "ok")
+    else:
+        flash("Esta refeição já foi enviada.", "info")
+    return redirect(request.referrer or url_for("paciente.historico"))
 
 
 # ────────────────────────── sono ──────────────────────────
@@ -171,8 +267,9 @@ def novo_sono():
                 "interrupcoes": f.get("interrupcoes"),
                 "observacoes": f.get("observacoes"),
             })
-            flash(f"Sono registrado ({s.duracao_horas:.1f}h).", "ok")
-            return redirect(url_for("paciente.dashboard"))
+            flash(f"Sono salvo ({s.duracao_horas:.1f}h). Envie ao nutricionista quando estiver pronto.",
+                  "ok")
+            return redirect(url_for("paciente.historico"))
 
     hoje = date.today().strftime("%Y-%m-%d")
     rascunho = _rascunho_ia()
@@ -180,7 +277,61 @@ def novo_sono():
     if prefill.get("data"):
         hoje = str(prefill["data"])[:10]
     return render_template("paciente/sono_form.html", cfg=config, hoje=hoje,
-                           prefill=prefill)
+                           prefill=prefill, registro=None)
+
+
+@bp_paciente.route("/sono/<int:sono_id>/editar", methods=["GET", "POST"])
+@apenas_paciente
+def editar_sono(sono_id):
+    s = _registro_do_paciente(RegistroSono, sono_id)
+    bloqueio = _bloqueado_se_enviado(s)
+    if bloqueio:
+        return bloqueio
+
+    if request.method == "POST":
+        f = request.form
+        hd, ha = f.get("hora_dormir") or "", f.get("hora_acordar") or ""
+        if not hd or not ha:
+            flash("Informe os horários de dormir e acordar.", "erro")
+        else:
+            try:
+                atualizar_sono(s, {
+                    "data": f.get("data"),
+                    "hora_dormir": hd,
+                    "hora_acordar": ha,
+                    "qualidade": f.get("qualidade"),
+                    "como_acordou": f.get("como_acordou"),
+                    "interrupcoes": f.get("interrupcoes"),
+                    "observacoes": f.get("observacoes"),
+                })
+                flash("Registro de sono atualizado.", "ok")
+                return redirect(url_for("paciente.historico"))
+            except ValueError as exc:
+                flash(str(exc), "erro")
+
+    prefill = {
+        "hora_dormir": s.hora_dormir,
+        "hora_acordar": s.hora_acordar,
+        "qualidade": s.qualidade,
+        "como_acordou": s.como_acordou,
+        "interrupcoes": s.interrupcoes,
+        "observacoes": s.observacoes,
+    }
+    hoje = s.data.strftime("%Y-%m-%d")
+    return render_template("paciente/sono_form.html", cfg=config, hoje=hoje,
+                           prefill=prefill, registro=s)
+
+
+@bp_paciente.route("/sono/<int:sono_id>/enviar", methods=["POST"])
+@apenas_paciente
+def enviar_sono(sono_id):
+    s = _registro_do_paciente(RegistroSono, sono_id)
+    if s.eh_rascunho:
+        enviar_ao_nutri(s)
+        flash("Sono enviado ao nutricionista.", "ok")
+    else:
+        flash("Este registro já foi enviado.", "info")
+    return redirect(request.referrer or url_for("paciente.historico"))
 
 
 # ────────────────────────── exercício ──────────────────────────
@@ -202,8 +353,8 @@ def novo_exercicio():
                 "sentimento_apos": f.get("sentimento_apos"),
                 "observacoes": f.get("observacoes"),
             })
-            flash("Exercício registrado.", "ok")
-            return redirect(url_for("paciente.dashboard"))
+            flash("Exercício salvo. Envie ao nutricionista quando estiver pronto.", "ok")
+            return redirect(url_for("paciente.historico"))
 
     hoje = date.today().strftime("%Y-%m-%d")
     rascunho = _rascunho_ia()
@@ -211,7 +362,60 @@ def novo_exercicio():
     if prefill.get("data"):
         hoje = str(prefill["data"])[:10]
     return render_template("paciente/exercicio_form.html", cfg=config, hoje=hoje,
-                           prefill=prefill)
+                           prefill=prefill, registro=None)
+
+
+@bp_paciente.route("/exercicio/<int:exercicio_id>/editar", methods=["GET", "POST"])
+@apenas_paciente
+def editar_exercicio(exercicio_id):
+    e = _registro_do_paciente(RegistroExercicio, exercicio_id)
+    bloqueio = _bloqueado_se_enviado(e)
+    if bloqueio:
+        return bloqueio
+
+    if request.method == "POST":
+        f = request.form
+        if not f.get("tipo") or not f.get("duracao_minutos"):
+            flash("Informe o tipo e a duração do exercício.", "erro")
+        else:
+            try:
+                atualizar_exercicio(e, {
+                    "data": f.get("data"),
+                    "tipo": f.get("tipo"),
+                    "atividade": f.get("atividade"),
+                    "duracao_minutos": f.get("duracao_minutos"),
+                    "intensidade": f.get("intensidade"),
+                    "sentimento_apos": f.get("sentimento_apos"),
+                    "observacoes": f.get("observacoes"),
+                })
+                flash("Exercício atualizado.", "ok")
+                return redirect(url_for("paciente.historico"))
+            except ValueError as exc:
+                flash(str(exc), "erro")
+
+    prefill = {
+        "tipo": e.tipo,
+        "atividade": e.atividade,
+        "duracao_minutos": e.duracao_minutos,
+        "intensidade": e.intensidade,
+        "sentimento_apos": e.sentimento_apos,
+        "observacoes": e.observacoes,
+    }
+    hoje = e.data.strftime("%Y-%m-%d")
+    return render_template("paciente/exercicio_form.html", cfg=config, hoje=hoje,
+                           prefill=prefill, registro=e)
+
+
+@bp_paciente.route("/exercicio/<int:exercicio_id>/enviar", methods=["POST"])
+@apenas_paciente
+def enviar_exercicio(exercicio_id):
+    e = _registro_do_paciente(RegistroExercicio, exercicio_id)
+    if e.eh_rascunho:
+        enviar_ao_nutri(e)
+        flash("Exercício enviado ao nutricionista.", "ok")
+    else:
+        flash("Este registro já foi enviado.", "info")
+    return redirect(request.referrer or url_for("paciente.historico"))
 
 
 # ────────────────────────── IA — registro rápido ──────────────────────────
@@ -280,7 +484,7 @@ def ia_salvar():
         return jsonify({"ok": False, "erro": "Tipo de registro inválido."}), 400
     try:
         salvar_por_tipo(current_user.id, tipo, dados)
-        return jsonify({"ok": True, "redirect": url_for("paciente.dashboard")})
+        return jsonify({"ok": True, "redirect": url_for("paciente.historico")})
     except ValueError as exc:
         return jsonify({"ok": False, "erro": str(exc)}), 400
     except Exception as exc:

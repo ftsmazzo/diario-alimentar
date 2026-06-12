@@ -20,21 +20,29 @@ def periodo(dias):
     return inicio, fim
 
 
-def buscar_registros(usuario_id, dias=30):
+def buscar_registros(usuario_id, dias=30, somente_enviados=False):
     """Refeições, sono e exercícios do período, mais antigos primeiro."""
     inicio, _ = periodo(dias)
-    refeicoes = (Refeicao.query
-                 .filter(Refeicao.usuario_id == usuario_id,
-                         Refeicao.data_hora >= inicio)
-                 .order_by(Refeicao.data_hora.asc()).all())
-    sono = (RegistroSono.query
-            .filter(RegistroSono.usuario_id == usuario_id,
-                    RegistroSono.data >= inicio.date())
-            .order_by(RegistroSono.data.asc()).all())
-    exercicios = (RegistroExercicio.query
-                  .filter(RegistroExercicio.usuario_id == usuario_id,
-                          RegistroExercicio.data >= inicio.date())
-                  .order_by(RegistroExercicio.data.asc()).all())
+    q_ref = (Refeicao.query
+             .filter(Refeicao.usuario_id == usuario_id,
+                     Refeicao.data_hora >= inicio))
+    if somente_enviados:
+        q_ref = q_ref.filter(Refeicao.enviado_nutri_em.isnot(None))
+    refeicoes = q_ref.order_by(Refeicao.data_hora.asc()).all()
+
+    q_sono = (RegistroSono.query
+              .filter(RegistroSono.usuario_id == usuario_id,
+                      RegistroSono.data >= inicio.date()))
+    if somente_enviados:
+        q_sono = q_sono.filter(RegistroSono.enviado_nutri_em.isnot(None))
+    sono = q_sono.order_by(RegistroSono.data.asc()).all()
+
+    q_exe = (RegistroExercicio.query
+             .filter(RegistroExercicio.usuario_id == usuario_id,
+                     RegistroExercicio.data >= inicio.date()))
+    if somente_enviados:
+        q_exe = q_exe.filter(RegistroExercicio.enviado_nutri_em.isnot(None))
+    exercicios = q_exe.order_by(RegistroExercicio.data.asc()).all()
     return refeicoes, sono, exercicios
 
 

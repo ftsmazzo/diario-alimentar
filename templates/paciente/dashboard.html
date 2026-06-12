@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "paciente/_acoes_registro.html" import acoes_registro %}
 {% block titulo %}Início{% endblock %}
 {% block topo_titulo %}Início{% endblock %}
 {% block conteudo %}
@@ -17,6 +18,13 @@
   </div>
   {% endif %}
 </header>
+
+{% if rascunhos %}
+<div class="flash flash-info">
+  Você tem {{ rascunhos }} registro(s) aguardando envio.
+  <a href="{{ url_for('paciente.historico') }}">Revisar no histórico</a>
+</div>
+{% endif %}
 
 <div class="acoes-rapidas">
   <a class="btn btn-primario" href="{{ url_for('paciente.nova_refeicao') }}">+ Refeição</a>
@@ -57,7 +65,7 @@
 <div class="painel tabela-rolagem">
   <table class="tabela-responsiva">
     <thead>
-      <tr><th>Quando</th><th>Tipo</th><th>Fome</th><th>Saciedade</th><th>Efetividade</th></tr>
+      <tr><th>Quando</th><th>Tipo</th><th>Fome</th><th>Saciedade</th><th>Efetividade</th><th></th></tr>
     </thead>
     <tbody>
       {% for r in ultimas %}
@@ -67,6 +75,7 @@
         <td data-label="Fome"><span class="chip-escala chip-fome">{{ r.fome_antes }} <span class="chip-seta">→</span> {{ r.fome_depois }}</span></td>
         <td data-label="Saciedade"><span class="chip-escala chip-sac">{{ r.saciedade_antes }} <span class="chip-seta">→</span> {{ r.saciedade_depois }}</span></td>
         <td data-label="Efetividade">{{ '%.0f'|format(r.efetividade) }}%</td>
+        <td data-label="Ações" class="celula-acoes">{{ acoes_registro('refeicao', r) }}</td>
       </tr>
       {% endfor %}
     </tbody>

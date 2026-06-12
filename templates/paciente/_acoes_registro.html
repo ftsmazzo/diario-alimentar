@@ -1,0 +1,24 @@
+{% macro acoes_registro(tipo, registro) %}
+{% if registro.eh_rascunho %}
+<div class="acoes-registro">
+  {% if tipo == 'refeicao' %}
+  <a class="btn btn-contorno btn-mini" href="{{ url_for('paciente.editar_refeicao', refeicao_id=registro.id) }}">Editar</a>
+  <form method="post" action="{{ url_for('paciente.enviar_refeicao', refeicao_id=registro.id) }}" class="form-enviar-inline"
+        onsubmit="return confirm('Enviar ao nutricionista? Depois disso não poderá mais editar.');">
+  {% elif tipo == 'sono' %}
+  <a class="btn btn-contorno btn-mini" href="{{ url_for('paciente.editar_sono', sono_id=registro.id) }}">Editar</a>
+  <form method="post" action="{{ url_for('paciente.enviar_sono', sono_id=registro.id) }}" class="form-enviar-inline"
+        onsubmit="return confirm('Enviar ao nutricionista? Depois disso não poderá mais editar.');">
+  {% else %}
+  <a class="btn btn-contorno btn-mini" href="{{ url_for('paciente.editar_exercicio', exercicio_id=registro.id) }}">Editar</a>
+  <form method="post" action="{{ url_for('paciente.enviar_exercicio', exercicio_id=registro.id) }}" class="form-enviar-inline"
+        onsubmit="return confirm('Enviar ao nutricionista? Depois disso não poderá mais editar.');">
+  {% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primario btn-mini">Enviar</button>
+  </form>
+</div>
+{% else %}
+<span class="badge-status badge-enviado">Enviado</span>
+{% endif %}
+{% endmacro %}

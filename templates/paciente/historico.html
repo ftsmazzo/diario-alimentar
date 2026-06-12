@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "paciente/_acoes_registro.html" import acoes_registro %}
 {% block titulo %}Histórico{% endblock %}
 {% block topo_titulo %}Histórico{% endblock %}
 {% block conteudo %}
 <header class="pagina-cab">
   <div class="pagina-cab-texto">
     <h1>Histórico</h1>
-    <p class="pagina-sub">Refeições, sono e exercícios do período.</p>
+    <p class="pagina-sub">Revise seus registros. Só o nutricionista vê o que você enviar.</p>
   </div>
   <div class="pagina-cab-acao">
     <form method="get" class="filtro-periodo">
@@ -23,7 +24,7 @@
 <div class="painel tabela-rolagem">
   {% if refeicoes %}
   <table class="tabela-responsiva">
-    <thead><tr><th>Quando</th><th>Tipo</th><th>Alimentos</th><th>Fome</th><th>Saciedade</th><th>Efet.</th><th>Sentimentos</th></tr></thead>
+    <thead><tr><th>Quando</th><th>Tipo</th><th>Alimentos</th><th>Fome</th><th>Saciedade</th><th>Efet.</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for r in refeicoes %}
       <tr>
@@ -33,7 +34,10 @@
         <td data-label="Fome"><span class="chip-escala chip-fome">{{ r.fome_antes }} <span class="chip-seta">→</span> {{ r.fome_depois }}</span></td>
         <td data-label="Saciedade"><span class="chip-escala chip-sac">{{ r.saciedade_antes }} <span class="chip-seta">→</span> {{ r.saciedade_depois }}</span></td>
         <td data-label="Efetividade">{{ '%.0f'|format(r.efetividade) }}%</td>
-        <td data-label="Sentimentos" class="suave">{{ r.sentimento_antes }}{% if r.sentimento_durante %} · {{ r.sentimento_durante }}{% endif %}</td>
+        <td data-label="Status">
+          {% if r.eh_rascunho %}<span class="badge-status badge-rascunho">Rascunho</span>{% else %}<span class="badge-status badge-enviado">Enviado</span>{% endif %}
+        </td>
+        <td data-label="Ações" class="celula-acoes">{{ acoes_registro('refeicao', r) }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -45,7 +49,7 @@
 <div class="painel tabela-rolagem">
   {% if sono %}
   <table class="tabela-responsiva">
-    <thead><tr><th>Data</th><th>Dormiu</th><th>Acordou</th><th>Duração</th><th>Qualidade</th><th>Interrupções</th><th>Como acordou</th></tr></thead>
+    <thead><tr><th>Data</th><th>Dormiu</th><th>Acordou</th><th>Duração</th><th>Qualidade</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for s in sono %}
       <tr>
@@ -54,8 +58,10 @@
         <td data-label="Acordou">{{ s.hora_acordar }}</td>
         <td data-label="Duração">{{ '%.1f'|format(s.duracao_horas) }}h</td>
         <td data-label="Qualidade">{{ s.qualidade }}/10</td>
-        <td data-label="Interrupções">{{ s.interrupcoes }}</td>
-        <td data-label="Como acordou" class="suave">{{ s.como_acordou }}</td>
+        <td data-label="Status">
+          {% if s.eh_rascunho %}<span class="badge-status badge-rascunho">Rascunho</span>{% else %}<span class="badge-status badge-enviado">Enviado</span>{% endif %}
+        </td>
+        <td data-label="Ações" class="celula-acoes">{{ acoes_registro('sono', s) }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -67,7 +73,7 @@
 <div class="painel tabela-rolagem">
   {% if exercicios %}
   <table class="tabela-responsiva">
-    <thead><tr><th>Data</th><th>Tipo</th><th>Atividade</th><th>Duração</th><th>Intensidade</th><th>Sentimento</th></tr></thead>
+    <thead><tr><th>Data</th><th>Tipo</th><th>Atividade</th><th>Duração</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for e in exercicios %}
       <tr>
@@ -75,8 +81,10 @@
         <td data-label="Tipo">{{ e.tipo }}</td>
         <td data-label="Atividade">{{ e.atividade }}</td>
         <td data-label="Duração">{{ '%.0f'|format(e.duracao_minutos) }} min</td>
-        <td data-label="Intensidade">{{ e.intensidade }}/10</td>
-        <td data-label="Sentimento" class="suave">{{ e.sentimento_apos }}</td>
+        <td data-label="Status">
+          {% if e.eh_rascunho %}<span class="badge-status badge-rascunho">Rascunho</span>{% else %}<span class="badge-status badge-enviado">Enviado</span>{% endif %}
+        </td>
+        <td data-label="Ações" class="celula-acoes">{{ acoes_registro('exercicio', e) }}</td>
       </tr>
       {% endfor %}
     </tbody>

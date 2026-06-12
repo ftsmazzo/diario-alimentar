@@ -5,8 +5,8 @@
 {% block conteudo %}
 <header class="pagina-cab">
   <div class="pagina-cab-texto">
-    <h1>Nova refeição</h1>
-    <p class="pagina-sub">Registre o que comeu e as 4 escalas de fome/saciedade.</p>
+    <h1>{% if registro %}Editar refeição{% else %}Nova refeição{% endif %}</h1>
+    <p class="pagina-sub">{% if registro %}Ajuste os dados antes de enviar ao nutricionista.{% else %}Salva como rascunho — envie quando estiver certo.{% endif %}</p>
   </div>
 </header>
 
@@ -15,7 +15,7 @@
 {% endif %}
 
 {% set p = prefill or {} %}
-<form method="post" class="form-app">
+<form method="post" class="form-app" action="{% if registro %}{{ url_for('paciente.editar_refeicao', refeicao_id=registro.id) }}{% endif %}">
   <div class="painel">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -119,8 +119,8 @@
   </div>
 
   <div class="form-rodape">
-    <button class="btn btn-primario btn-bloco" type="submit">Salvar refeição</button>
-    <a class="btn btn-secundario btn-bloco" href="{{ url_for('paciente.registrar') }}">Cancelar</a>
+    <button class="btn btn-primario btn-bloco" type="submit">{% if registro %}Salvar alterações{% else %}Salvar rascunho{% endif %}</button>
+    <a class="btn btn-secundario btn-bloco" href="{{ url_for('paciente.historico') if registro else url_for('paciente.registrar') }}">Cancelar</a>
   </div>
 </form>
 {% endblock %}

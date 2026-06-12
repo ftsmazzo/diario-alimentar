@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 """Persistência de registros a partir de formulário ou dados estruturados pela IA."""
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 import config
 from models import db, Refeicao, RegistroSono, RegistroExercicio, clamp_escala
+
+
+def _exigir_rascunho(registro):
+    if registro.enviado_nutri_em:
+        raise ValueError("Este registro já foi enviado e não pode mais ser alterado.")
 
 
 def _parse_data_hora(valor):
@@ -125,3 +130,71 @@ def salvar_por_tipo(usuario_id, tipo, dados):
     if tipo == "exercicio":
         return salvar_exercicio(usuario_id, dados)
     raise ValueError("Tipo de registro desconhecido.")
+
+
+def atualizar_refeicao(registro, dados):
+    _exigir_rascunho(registro)
+    d = dados or {}
+    tipo = _escolher(d.get("tipo"), config.TIPOS_REFEICAO)
+    if not tipo:
+        raise ValueError("Tipo de refeição não identificado.")
+    registro.data_hora = _parse_data_hora(d.get("data_hora"))
+    registro.tipo = tipo
+    registro.alimentos = (d.get("alimentos") or "").strip()
+    registro.fome_antes = clamp_escala(d.get("fome_antes"), registro.fome_antes)
+    registro.saciedade_antes = clamp_escala(d.get("saciedade_antes"), registro.saciedade_antes)
+    registro.fome_depois = clamp_escala(d.get("fome_depois"), registro.fome_depois)
+    registro.saciedade_depois = clamp_escala(d.get("saciedade_depois"), registro.saciedade_depois)
+    registro.sentimento_antes = _escolher(d.get("sentimento_antes"), config.SENTIMENTOS_ANTES)
+    registro.sentimento_durante = _escolher(d.get("sentimento_durante"), config.SENTIMENTOS_DURANTE)
+    registro.local_refeicao = _escolher(d.get("local_refeicao"), config.LOCAIS)
+    registro.companhia = _escolher(d.get("companhia"), config.COMPANHIAS)
+    registro.tempo_refeicao = int(d.get("tempo_refeicao") or 0)
+    registro.agua_ml = float(d.get("agua_ml") or 0)
+    registro.observacoes = (d.get("observacoes") or "").strip()
+    db.session.commit()
+    return registro
+
+
+def atualizar_sono(registro, dados):
+    _exigir_rascunho(registro)
+    d = dados or {}
+    hd = d.get("hora_dormir") or ""
+    ha = d.get("hora_acordar") or ""
+    if not hd or not ha:
+        raise ValueError("Horários de sono não identificados.")
+    registro.data = _parse_data(d.get("data"))
+    registro.hora_dormir = hd
+    registro.hora_acordar = ha
+    registro.duracao_horas = _duracao_sono(hd, ha)
+    registro.qualidade = clamp_escala(d.get("qualidade"), registro.qualidade)
+    registro.como_acordou = _escolher(d.get("como_acordou"), config.COMO_ACORDOU)
+    registro.interrupcoes = int(d.get("interrupcoes") or 0)
+    registro.observacoes = (d.get("observacoes") or "").strip()
+    db.session.commit()
+    return registro
+
+
+def atualizar_exercicio(registro, dados):
+    _exigir_rascunho(registro)
+    d = dados or {}
+    tipo = _escolher(d.get("tipo"), config.TIPOS_EXERCICIO)
+    duracao = float(d.get("duracao_minutos") or 0)
+    if not tipo or duracao <= 0:
+        raise ValueError("Tipo e duração do exercício são obrigatórios.")
+    registro.data = _parse_data(d.get("data"))
+    registro.tipo = tipo
+    registro.atividade = (d.get("atividade") or "").strip()
+    registro.duracao_minutos = duracao
+    registro.intensidade = clamp_escala(d.get("intensidade"), registro.intensidade)
+    registro.sentimento_apos = _escolher(d.get("sentimento_apos"), config.SENTIMENTOS_POS_EXERCICIO)
+    registro.observacoes = (d.get("observacoes") or "").strip()
+    db.session.commit()
+    return registro
+
+
+def enviar_ao_nutri(registro):
+    _exigir_rascunho(registro)
+    registro.enviado_nutri_em = datetime.now(timezone.utc)
+    db.session.commit()
+    return registro
