@@ -12,6 +12,7 @@ aplicacao = modulo_app.app
 aplicacao.config["WTF_CSRF_ENABLED"] = False  # simplifica o teste
 
 with aplicacao.app_context():
+    db.drop_all()
     db.create_all()
 falhas = []
 
@@ -30,19 +31,27 @@ with aplicacao.test_client() as nutri:
     checa(r.status_code == 200, "cadastro nutricionista")
 
     r = nutri.get("/nutri/")
-    codigo = re.search(r'codigo-convite">(\w{6})<', r.get_data(as_text=True))
+    codigo = re.search(r'data-codigo="(\w{6})"', r.get_data(as_text=True))
     checa(codigo is not None, "código de convite gerado")
     codigo = codigo.group(1)
 
 with aplicacao.test_client() as pac:
-    # 2. cadastro paciente com código → vínculo automático
+    # 2. cadastro paciente sem código → bloqueado
+    r = pac.post("/registro", data={
+        "nome": "Sem Codigo", "email": "sem@ex.com", "senha": "senha12345",
+        "tipo": "paciente", "termos": "on"}, follow_redirects=True)
+    html = r.get_data(as_text=True)
+    checa("Criar conta" in html and "flash-erro" in html,
+          "cadastro paciente sem convite bloqueado")
+
+    # 3. cadastro paciente com código → vínculo automático
     r = pac.post("/registro", data={
         "nome": "Hudson Silva", "email": "hudson@ex.com", "senha": "senha12345",
         "tipo": "paciente", "codigo_convite": codigo, "termos": "on"},
         follow_redirects=True)
     checa(r.status_code == 200, "cadastro paciente com convite")
 
-    # 3. registros
+    # 4. registros
     r = pac.post("/paciente/refeicao/nova", data={
         "data_hora": "2026-06-10T12:30", "tipo": "Almoço",
         "alimentos": "Arroz, feijão, frango", "fome_antes": 8,
@@ -85,9 +94,9 @@ with aplicacao.test_client() as nutri:
     r = nutri.get("/nutri/paciente/2/dados?dias=30")
     j = r.get_json()
     checa(j["refeicoes"]["fome_antes"] == [8], "JSON dos gráficos correto")
-    checa(j["refeicoes"]["efetividade"] == [86], "efetividade calculada (8→2, 2→9 = 86%)")
+    checa(j["refeicoes"]["efetividade"] == [86], "efetividade calculada (8->2, 2->9 = 86%)")
 
-    # 4. envio de arquivo
+    # 5. envio de arquivo
     r = nutri.post("/nutri/paciente/2/enviar-arquivo", data={
         "categoria": "Sugestão de cardápio", "descricao": "Cardápio da semana",
         "arquivo": (io.BytesIO(b"%PDF-1.4 conteudo"), "cardapio.pdf")},
@@ -102,7 +111,7 @@ with aplicacao.test_client() as nutri:
 
     # nutricionista NÃO acessa paciente de outro profissional
     r = nutri.get("/nutri/paciente/999")
-    checa(r.status_code == 403, "acesso a paciente não vinculado → 403")
+    checa(r.status_code == 403, "acesso a paciente nao vinculado -> 403")
 
 with aplicacao.test_client() as pac:
     pac.post("/login", data={"email": "hudson@ex.com", "senha": "senha12345"})

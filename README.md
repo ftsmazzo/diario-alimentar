@@ -8,8 +8,7 @@ Aplicação web com dois perfis de usuário:
   estatísticas; envia cardápios, pedidos de exames e planos de treino.
 
 O vínculo é feito por **código de convite**: cada nutricionista tem um
-código de 6 caracteres que o paciente informa no cadastro (ou depois,
-no painel).
+código de 6 caracteres que o paciente **precisa informar no cadastro**.
 
 ## Rodar localmente
 

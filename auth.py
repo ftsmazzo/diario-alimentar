@@ -2,8 +2,8 @@
 """Autenticação: cadastro (2 perfis), login, logout.
 
 Vínculo nutricionista ↔ paciente: o nutricionista possui um código de
-convite; o paciente informa esse código no cadastro (ou depois) e o
-vínculo é criado automaticamente.
+convite; o paciente precisa informar esse código no cadastro para criar
+a conta vinculada.
 """
 import re
 
@@ -63,12 +63,15 @@ def registro():
             erros.append("Este e-mail já está cadastrado.")
 
         nutri_convite = None
-        if tipo == "paciente" and codigo:
-            nutri_convite = Usuario.query.filter_by(
-                codigo_convite=codigo, tipo="nutricionista").first()
-            if not nutri_convite:
-                erros.append("Código de convite não encontrado. "
-                             "Confira com seu nutricionista ou deixe em branco.")
+        if tipo == "paciente":
+            if not codigo:
+                erros.append("Informe o código do seu nutricionista.")
+            else:
+                nutri_convite = Usuario.query.filter_by(
+                    codigo_convite=codigo, tipo="nutricionista").first()
+                if not nutri_convite:
+                    erros.append("Código de convite não encontrado. "
+                                 "Confira com seu nutricionista.")
 
         if erros:
             for e in erros:
@@ -83,7 +86,7 @@ def registro():
         db.session.add(usuario)
         db.session.flush()  # garante usuario.id antes do vínculo
 
-        if nutri_convite:
+        if tipo == "paciente":
             db.session.add(Vinculo(nutricionista_id=nutri_convite.id,
                                    paciente_id=usuario.id))
         db.session.commit()
