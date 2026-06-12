@@ -47,6 +47,15 @@ def create_app():
     def carregar_usuario(user_id):
         return db.session.get(Usuario, int(user_id))
 
+    @app.context_processor
+    def injetar_nav_paciente():
+        from flask_login import current_user
+        from models import Arquivo
+        if current_user.is_authenticated and current_user.eh_paciente:
+            return {"arquivos_novos_nav": Arquivo.query.filter_by(
+                paciente_id=current_user.id, visto_em=None).count()}
+        return {}
+
     # Blueprints
     from auth import bp_auth
     from paciente import bp_paciente

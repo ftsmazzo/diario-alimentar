@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar{% endblock %}
+{% block topo_titulo %}Novo registro{% endblock %}
+{% block conteudo %}
+<header class="pagina-cab">
+  <div class="pagina-cab-texto">
+    <h1>O que deseja registrar?</h1>
+    <p class="pagina-sub">Escolha o tipo de registro para preencher agora.</p>
+  </div>
+</header>
+
+<div class="hub-registro">
+  <a class="hub-item" href="{{ url_for('paciente.nova_refeicao') }}">
+    <span class="hub-icone hub-icone-ref" aria-hidden="true">4</span>
+    <div class="hub-texto">
+      <strong>Refeição</strong>
+      <span>Fome, saciedade e contexto emocional</span>
+    </div>
+  </a>
+  <a class="hub-item" href="{{ url_for('paciente.novo_sono') }}">
+    <span class="hub-icone hub-icone-son" aria-hidden="true">Zz</span>
+    <div class="hub-texto">
+      <strong>Sono</strong>
+      <span>Horários, qualidade e como acordou</span>
+    </div>
+  </a>
+  <a class="hub-item" href="{{ url_for('paciente.novo_exercicio') }}">
+    <span class="hub-icone hub-icone-exe" aria-hidden="true">Ex</span>
+    <div class="hub-texto">
+      <strong>Exercício</strong>
+      <span>Atividade, duração e intensidade</span>
+    </div>
+  </a>
+</div>
+{% endblock %}

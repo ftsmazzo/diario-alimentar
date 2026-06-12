@@ -1,0 +1,9 @@
+{# Uso: {% include 'partials/pagina_cabecalho.html' with context %}
+   titulo_pagina, subtitulo_pagina (opcional), acao_pagina (opcional, HTML) #}
+<header class="pagina-cab">
+  <div class="pagina-cab-texto">
+    <h1>{{ titulo_pagina }}</h1>
+    {% if subtitulo_pagina %}<p class="pagina-sub">{{ subtitulo_pagina }}</p>{% endif %}
+  </div>
+  {% if acao_pagina %}<div class="pagina-cab-acao">{{ acao_pagina|safe }}</div>{% endif %}
+</header>

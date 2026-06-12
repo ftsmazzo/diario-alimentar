@@ -2,35 +2,58 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2F5D46">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>{% block titulo %}Pleno{% endblock %} · Pleno</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-<header class="topo">
-  <div class="container topo-inner">
-    <a class="marca" href="{{ url_for('index') }}">pleno<span class="marca-ponto">.</span></a>
-    {% if current_user.is_authenticated %}
-    <nav class="nav">
-      {% if current_user.eh_paciente %}
-        <a href="{{ url_for('paciente.dashboard') }}">Início</a>
-        <a href="{{ url_for('paciente.historico') }}">Histórico</a>
-        <a href="{{ url_for('paciente.arquivos') }}">Arquivos</a>
+<body class="app{% if current_user.is_authenticated %} app-logado{% if current_user.eh_paciente %} app-paciente{% else %} app-nutri{% endif %}{% else %} app-auth{% endif %}{% block body_extra %}{% endblock %}">
+
+<header class="app-topo">
+  <div class="container app-topo-inner">
+    {% block topo_esquerda %}
+      {% if current_user.is_authenticated and current_user.eh_nutricionista and request.endpoint == 'nutri.paciente_detalhe' %}
+        <a class="btn-voltar" href="{{ url_for('nutri.dashboard') }}" aria-label="Voltar para pacientes">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
       {% else %}
-        <a href="{{ url_for('nutri.dashboard') }}">Pacientes</a>
+        <a class="marca" href="{{ url_for('index') }}">pleno<span class="marca-ponto">.</span></a>
       {% endif %}
-      <a class="nav-sair" href="{{ url_for('auth.logout') }}">Sair</a>
-    </nav>
+    {% endblock %}
+
+    {% if current_user.is_authenticated %}
+      <nav class="nav-desktop" aria-label="Navegação">
+        {% set ep = request.endpoint %}
+        {% if current_user.eh_paciente %}
+          <a href="{{ url_for('paciente.dashboard') }}" class="{% if ep == 'paciente.dashboard' %}ativo{% endif %}">Início</a>
+          <a href="{{ url_for('paciente.registrar') }}" class="{% if ep in ('paciente.registrar', 'paciente.nova_refeicao', 'paciente.novo_sono', 'paciente.novo_exercicio') %}ativo{% endif %}">Registrar</a>
+          <a href="{{ url_for('paciente.historico') }}" class="{% if ep == 'paciente.historico' %}ativo{% endif %}">Histórico</a>
+          <a href="{{ url_for('paciente.arquivos') }}" class="{% if ep == 'paciente.arquivos' %}ativo{% endif %}">Arquivos</a>
+        {% else %}
+          <a href="{{ url_for('nutri.dashboard') }}" class="{% if ep in ('nutri.dashboard', 'nutri.paciente_detalhe') %}ativo{% endif %}">Pacientes</a>
+        {% endif %}
+        <a href="{{ url_for('auth.logout') }}">Sair</a>
+      </nav>
+      <div class="app-topo-centro">
+        {% block topo_titulo %}{% endblock %}
+      </div>
+      <div class="app-topo-direita">
+        <span class="app-usuario" title="{{ current_user.nome }}">{{ current_user.nome.split(' ')[0] }}</span>
+        <a class="btn-sair-topo" href="{{ url_for('auth.logout') }}" aria-label="Sair">Sair</a>
+      </div>
     {% endif %}
   </div>
 </header>
 
-<main class="container">
+<main class="app-conteudo container">
   {% with mensagens = get_flashed_messages(with_categories=true) %}
     {% if mensagens %}
-      <div class="flashes">
+      <div class="flashes" role="status">
         {% for categoria, msg in mensagens %}
           <div class="flash flash-{{ categoria }}">{{ msg }}</div>
         {% endfor %}
@@ -41,7 +64,45 @@
   {% block conteudo %}{% endblock %}
 </main>
 
-<footer class="rodape">
+{% if current_user.is_authenticated and current_user.eh_paciente %}
+<nav class="nav-inferior" aria-label="Navegação principal">
+  {% set ep = request.endpoint %}
+  <a class="nav-item{% if ep == 'paciente.dashboard' %} ativo{% endif %}"
+     href="{{ url_for('paciente.dashboard') }}">
+    <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"/></svg>
+    <span>Início</span>
+  </a>
+  <a class="nav-item{% if ep == 'paciente.historico' %} ativo{% endif %}"
+     href="{{ url_for('paciente.historico') }}">
+    <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <span>Histórico</span>
+  </a>
+  <a class="nav-item nav-item-destaque{% if ep in ('paciente.registrar', 'paciente.nova_refeicao', 'paciente.novo_sono', 'paciente.novo_exercicio') %} ativo{% endif %}"
+     href="{{ url_for('paciente.registrar') }}">
+    <span class="nav-destaque-icone" aria-hidden="true">+</span>
+    <span>Registrar</span>
+  </a>
+  <a class="nav-item{% if ep == 'paciente.arquivos' %} ativo{% endif %}"
+     href="{{ url_for('paciente.arquivos') }}">
+    <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+    <span>Arquivos</span>
+    {% if arquivos_novos_nav is defined and arquivos_novos_nav %}
+      <span class="nav-badge">{{ arquivos_novos_nav }}</span>
+    {% endif %}
+  </a>
+</nav>
+{% elif current_user.is_authenticated and current_user.eh_nutricionista %}
+<nav class="nav-inferior nav-inferior-nutri" aria-label="Navegação principal">
+  {% set ep = request.endpoint %}
+  <a class="nav-item{% if ep in ('nutri.dashboard', 'nutri.paciente_detalhe') %} ativo{% endif %}"
+     href="{{ url_for('nutri.dashboard') }}">
+    <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    <span>Pacientes</span>
+  </a>
+</nav>
+{% endif %}
+
+<footer class="rodape{% if current_user.is_authenticated %} rodape-app{% endif %}">
   <div class="container">
     Pleno registra sua rotina — não substitui avaliação médica ou nutricional.
   </div>

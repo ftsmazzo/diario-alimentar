@@ -125,5 +125,5 @@ with aplicacao.test_client() as pac:
           "arquivo marcado como visto após download")
 
 print()
-print("RESULTADO:", "TODOS OS TESTES PASSARAM ✔" if not falhas
+print("RESULTADO:", "TODOS OS TESTES PASSARAM" if not falhas
       else f"{len(falhas)} falha(s): {falhas}")

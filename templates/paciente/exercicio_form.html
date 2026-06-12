@@ -1,63 +1,75 @@
 {% extends "base.html" %}
 {% block titulo %}Registrar exercício{% endblock %}
+{% block topo_titulo %}Exercício{% endblock %}
+{% block body_extra %} form-pagina{% endblock %}
 {% block conteudo %}
-<h1>Registrar exercício</h1>
-<form method="post" class="painel" style="max-width:560px">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-  <div class="linha-2">
-    <div class="campo">
-      <label for="data">Data</label>
-      <input type="date" id="data" name="data" value="{{ hoje }}" required>
-    </div>
-    <div class="campo">
-      <label for="tipo-exercicio">Tipo</label>
-      <select id="tipo-exercicio" name="tipo" required>
-        <option value="" disabled selected>Escolha…</option>
-        {% for t in cfg.TIPOS_EXERCICIO %}<option>{{ t }}</option>{% endfor %}
-      </select>
-    </div>
+<header class="pagina-cab">
+  <div class="pagina-cab-texto">
+    <h1>Registrar exercício</h1>
+    <p class="pagina-sub">Atividade, duração e como se sentiu depois.</p>
   </div>
+</header>
 
-  <div class="linha-2">
-    <div class="campo">
-      <label for="atividade">Atividade</label>
-      <input type="text" id="atividade" name="atividade" list="lista-atividades"
-             placeholder="Ex.: Caminhada, Musculação…">
-      <datalist id="lista-atividades"></datalist>
-    </div>
-    <div class="campo">
-      <label for="duracao_minutos">Duração (min)</label>
-      <input type="number" id="duracao_minutos" name="duracao_minutos"
-             min="1" max="600" required placeholder="30">
-    </div>
-  </div>
+<form method="post" class="form-app">
+  <div class="painel">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-  <div class="bloco-escalas">
-    <div class="metade">
-      <div class="metade-titulo">Intensidade percebida</div>
-      <div class="escala">
-        <span class="escala-nome cor-exe">Intensidade</span>
-        <input type="range" name="intensidade" min="1" max="10" value="5" data-saida="v-i">
-        <span class="escala-valor" id="v-i" style="color:var(--exercicio);background:var(--fome-claro)">5</span>
+    <div class="linha-2">
+      <div class="campo">
+        <label for="data">Data</label>
+        <input type="date" id="data" name="data" value="{{ hoje }}" required>
+      </div>
+      <div class="campo">
+        <label for="tipo-exercicio">Tipo</label>
+        <select id="tipo-exercicio" name="tipo" required>
+          <option value="" disabled selected>Escolha…</option>
+          {% for t in cfg.TIPOS_EXERCICIO %}<option>{{ t }}</option>{% endfor %}
+        </select>
       </div>
     </div>
+
+    <div class="linha-2">
+      <div class="campo">
+        <label for="atividade">Atividade</label>
+        <input type="text" id="atividade" name="atividade" list="lista-atividades"
+               placeholder="Ex.: Caminhada, Musculação…">
+        <datalist id="lista-atividades"></datalist>
+      </div>
+      <div class="campo">
+        <label for="duracao_minutos">Duração (min)</label>
+        <input type="number" id="duracao_minutos" name="duracao_minutos"
+               min="1" max="600" required placeholder="30" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="bloco-escalas">
+      <div class="metade">
+        <div class="metade-titulo">Intensidade percebida</div>
+        <div class="escala">
+          <span class="escala-nome cor-exe">Intensidade</span>
+          <input type="range" name="intensidade" min="1" max="10" value="5" data-saida="v-i">
+          <span class="escala-valor" id="v-i" style="color:var(--exercicio);background:var(--fome-claro)">5</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="sentimento_apos">Como se sentiu depois</label>
+      <select id="sentimento_apos" name="sentimento_apos">
+        <option value="">—</option>
+        {% for s in cfg.SENTIMENTOS_POS_EXERCICIO %}<option>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="observacoes">Observações</label>
+      <textarea id="observacoes" name="observacoes"></textarea>
+    </div>
   </div>
 
-  <div class="campo">
-    <label for="sentimento_apos">Como se sentiu depois</label>
-    <select id="sentimento_apos" name="sentimento_apos">
-      <option value="">—</option>
-      {% for s in cfg.SENTIMENTOS_POS_EXERCICIO %}<option>{{ s }}</option>{% endfor %}
-    </select>
+  <div class="form-rodape">
+    <button class="btn btn-primario btn-bloco" type="submit">Salvar exercício</button>
+    <a class="btn btn-secundario btn-bloco" href="{{ url_for('paciente.registrar') }}">Cancelar</a>
   </div>
-
-  <div class="campo">
-    <label for="observacoes">Observações</label>
-    <textarea id="observacoes" name="observacoes"></textarea>
-  </div>
-
-  <button class="btn btn-primario" type="submit">Salvar exercício</button>
-  <a class="btn" href="{{ url_for('paciente.dashboard') }}">Cancelar</a>
 </form>
 {% endblock %}

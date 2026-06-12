@@ -1,4 +1,4 @@
-/* Pleno — interações leves, sem framework. */
+/* Pleno — interações leves, mobile-first */
 
 // Sliders das escalas: mostrar o valor ao vivo
 document.querySelectorAll("input[type=range][data-saida]").forEach(function (slider) {
@@ -33,14 +33,49 @@ if (seletorTipo) {
   });
 }
 
-// Copiar código de convite
+// Copiar código de convite (com fallback para mobile)
 var btnCopiar = document.getElementById("copiar-codigo");
 if (btnCopiar) {
   btnCopiar.addEventListener("click", function () {
     var codigo = btnCopiar.dataset.codigo || "";
-    navigator.clipboard.writeText(codigo).then(function () {
+    var textoOriginal = btnCopiar.textContent;
+    function ok() {
       btnCopiar.textContent = "Copiado!";
-      setTimeout(function () { btnCopiar.textContent = "Copiar código"; }, 1800);
-    });
+      setTimeout(function () { btnCopiar.textContent = textoOriginal; }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codigo).then(ok).catch(function () {
+        window.prompt("Copie o código:", codigo);
+      });
+    } else {
+      window.prompt("Copie o código:", codigo);
+    }
   });
 }
+
+// Cadastro: código obrigatório só para pacientes
+(function () {
+  var campo = document.getElementById("campo-codigo-convite");
+  var input = document.getElementById("codigo_convite");
+  var radios = document.querySelectorAll('input[name="tipo"]');
+  if (!campo || !input || !radios.length) return;
+
+  function atualizar() {
+    var paciente = document.querySelector('input[name="tipo"][value="paciente"]').checked;
+    campo.style.display = paciente ? "" : "none";
+    input.required = paciente;
+    if (!paciente) input.value = "";
+  }
+
+  radios.forEach(function (r) { r.addEventListener("change", atualizar); });
+  atualizar();
+})();
+
+// Auto-ocultar flashes após alguns segundos
+document.querySelectorAll(".flash").forEach(function (el) {
+  setTimeout(function () {
+    el.style.transition = "opacity .4s";
+    el.style.opacity = "0";
+    setTimeout(function () { el.remove(); }, 400);
+  }, 5000);
+});

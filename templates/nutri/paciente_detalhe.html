@@ -1,20 +1,26 @@
 {% extends "base.html" %}
 {% block titulo %}{{ paciente.nome }}{% endblock %}
+{% block topo_titulo %}{{ paciente.nome.split(' ')[0] }}{% endblock %}
 {% block conteudo %}
-<div class="topo-secao">
-  <h1>{{ paciente.nome }}</h1>
-  <form method="get" style="display:flex;gap:8px;align-items:center">
-    <label for="dias" style="margin:0">Período</label>
-    <select id="dias" name="dias" onchange="this.form.submit()">
-      {% for d in [7, 14, 30, 60, 90, 180] %}
-        <option value="{{ d }}" {% if dias == d %}selected{% endif %}>{{ d }} dias</option>
-      {% endfor %}
-    </select>
-  </form>
-</div>
+<header class="pagina-cab">
+  <div class="pagina-cab-texto">
+    <h1>{{ paciente.nome }}</h1>
+    <p class="pagina-sub">{{ paciente.email }}</p>
+  </div>
+  <div class="pagina-cab-acao">
+    <form method="get" class="filtro-periodo">
+      <label for="dias">Período</label>
+      <select id="dias" name="dias" onchange="this.form.submit()">
+        {% for d in [7, 14, 30, 60, 90, 180] %}
+          <option value="{{ d }}" {% if dias == d %}selected{% endif %}>{{ d }} dias</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</header>
 
 {% for a in alertas %}
-<div class="alerta-bemestar">🤝 {{ a }} <span class="suave">— padrão observado
+<div class="alerta-bemestar">{{ a }} <span class="suave">— padrão observado
   nos registros; a avaliação clínica é sua.</span></div>
 {% endfor %}
 
@@ -30,15 +36,15 @@
   <div class="card"><div class="card-num cor-sono">{{ '%.1f'|format(stats.sono.duracao_media) }}h</div>
     <div class="card-rotulo">Sono médio ({{ stats.sono.total }} noites)</div></div>
   <div class="card"><div class="card-num cor-exe">{{ '%.0f'|format(stats.exercicios.minutos_total) }}</div>
-    <div class="card-rotulo">Min de exercício ({{ stats.exercicios.total }})</div></div>
+    <div class="card-rotulo">Min exercício ({{ stats.exercicios.total }})</div></div>
 </div>
 
-<h2>Fome e saciedade — antes → depois</h2>
+<h2>Fome e saciedade</h2>
 <div class="painel"><div class="grafico-caixa"><canvas id="grafEscalas"></canvas></div></div>
 
 <div class="linha-2">
   <div>
-    <h2>Efetividade das refeições</h2>
+    <h2>Efetividade</h2>
     <div class="painel"><div class="grafico-caixa"><canvas id="grafEfetividade"></canvas></div></div>
   </div>
   <div>
@@ -58,18 +64,18 @@
 <h2>Refeições recentes</h2>
 <div class="painel tabela-rolagem">
   {% if refeicoes_recentes %}
-  <table>
+  <table class="tabela-responsiva">
     <thead><tr><th>Quando</th><th>Tipo</th><th>Alimentos</th><th>Fome</th><th>Saciedade</th><th>Sentimentos</th><th>Contexto</th></tr></thead>
     <tbody>
       {% for r in refeicoes_recentes %}
       <tr>
-        <td>{{ r.data_hora.strftime('%d/%m %H:%M') }}</td>
-        <td>{{ r.tipo }}</td>
-        <td style="max-width:200px">{{ r.alimentos[:80] }}{% if r.alimentos|length > 80 %}…{% endif %}</td>
-        <td><span class="chip-escala chip-fome">{{ r.fome_antes }} <span class="chip-seta">→</span> {{ r.fome_depois }}</span></td>
-        <td><span class="chip-escala chip-sac">{{ r.saciedade_antes }} <span class="chip-seta">→</span> {{ r.saciedade_depois }}</span></td>
-        <td class="suave">{{ r.sentimento_antes }}{% if r.sentimento_durante %} · {{ r.sentimento_durante }}{% endif %}</td>
-        <td class="suave">{{ r.local_refeicao }}{% if r.companhia %} · {{ r.companhia }}{% endif %}</td>
+        <td data-label="Quando">{{ r.data_hora.strftime('%d/%m %H:%M') }}</td>
+        <td data-label="Tipo">{{ r.tipo }}</td>
+        <td data-label="Alimentos">{{ r.alimentos[:80] }}{% if r.alimentos|length > 80 %}…{% endif %}</td>
+        <td data-label="Fome"><span class="chip-escala chip-fome">{{ r.fome_antes }} <span class="chip-seta">→</span> {{ r.fome_depois }}</span></td>
+        <td data-label="Saciedade"><span class="chip-escala chip-sac">{{ r.saciedade_antes }} <span class="chip-seta">→</span> {{ r.saciedade_depois }}</span></td>
+        <td data-label="Sentimentos" class="suave">{{ r.sentimento_antes }}{% if r.sentimento_durante %} · {{ r.sentimento_durante }}{% endif %}</td>
+        <td data-label="Contexto" class="suave">{{ r.local_refeicao }}{% if r.companhia %} · {{ r.companhia }}{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -77,9 +83,9 @@
   {% else %}<div class="vazio">Sem refeições no período.</div>{% endif %}
 </div>
 
-<h2>Enviar arquivo ao paciente</h2>
+<h2>Enviar arquivo</h2>
 <div class="painel">
-  <form method="post" enctype="multipart/form-data"
+  <form method="post" enctype="multipart/form-data" class="form-app"
         action="{{ url_for('nutri.enviar_arquivo', paciente_id=paciente.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="linha-2">
@@ -90,7 +96,7 @@
         </select>
       </div>
       <div class="campo">
-        <label for="arquivo">Arquivo <span class="suave">(PDF, imagem, Word, Excel — até 10 MB)</span></label>
+        <label for="arquivo">Arquivo <span class="suave">(até 10 MB)</span></label>
         <input type="file" id="arquivo" name="arquivo" required
                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.txt">
       </div>
@@ -98,29 +104,29 @@
     <div class="campo">
       <label for="descricao">Mensagem para o paciente</label>
       <textarea id="descricao" name="descricao"
-                placeholder="Ex.: Cardápio para as próximas 2 semanas — foque nos lanches da tarde."></textarea>
+                placeholder="Ex.: Cardápio para as próximas 2 semanas."></textarea>
     </div>
-    <button class="btn btn-primario" type="submit">Enviar arquivo</button>
+    <button class="btn btn-primario btn-bloco" type="submit">Enviar arquivo</button>
   </form>
 
   {% if arquivos %}
-  <h2 style="margin-top:22px">Arquivos já enviados</h2>
+  <h2 style="margin-top:22px">Arquivos enviados</h2>
   <div class="tabela-rolagem">
-    <table>
+    <table class="tabela-responsiva">
       <thead><tr><th>Enviado em</th><th>Categoria</th><th>Arquivo</th><th>Visto</th><th></th></tr></thead>
       <tbody>
         {% for a in arquivos %}
         <tr>
-          <td>{{ a.enviado_em.strftime('%d/%m/%Y') }}</td>
-          <td>{{ a.categoria }}</td>
-          <td><a href="{{ url_for('nutri.baixar_arquivo', arquivo_id=a.id) }}">{{ a.nome_original }}</a></td>
-          <td>{% if a.visto_em %}✔ {{ a.visto_em.strftime('%d/%m') }}{% else %}<span class="suave">ainda não</span>{% endif %}</td>
-          <td>
-            <form method="post" style="display:inline"
+          <td data-label="Enviado em">{{ a.enviado_em.strftime('%d/%m/%Y') }}</td>
+          <td data-label="Categoria">{{ a.categoria }}</td>
+          <td data-label="Arquivo"><a href="{{ url_for('nutri.baixar_arquivo', arquivo_id=a.id) }}">{{ a.nome_original }}</a></td>
+          <td data-label="Visto">{% if a.visto_em %}{{ a.visto_em.strftime('%d/%m') }}{% else %}<span class="suave">ainda não</span>{% endif %}</td>
+          <td class="td-acao" data-label="">
+            <form method="post" style="display:block"
                   action="{{ url_for('nutri.excluir_arquivo', arquivo_id=a.id) }}"
                   onsubmit="return confirm('Remover este arquivo?')">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-perigo btn-mini" type="submit">Remover</button>
+              <button class="btn btn-perigo btn-mini btn-bloco" type="submit">Remover</button>
             </form>
           </td>
         </tr>
@@ -143,21 +149,23 @@
   const FOME = "#DB7A2E", SAC = "#3E7C59", SONO = "#6B5CA5",
         EXE = "#C2542F", MATA = "#2F5D46";
   const base = { responsive: true, maintainAspectRatio: false,
-                 interaction: { mode: "index", intersect: false } };
-  const eixo10 = { y: { min: 0, max: 10, ticks: { stepSize: 2 } } };
+                 interaction: { mode: "index", intersect: false },
+                 plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } };
+  const eixo10 = { y: { min: 0, max: 10, ticks: { stepSize: 2, font: { size: 10 } } },
+                   x: { ticks: { font: { size: 10 }, maxRotation: 45 } } };
 
   if (d.refeicoes.labels.length) {
     new Chart(document.getElementById("grafEscalas"), {
       type: "line",
       data: { labels: d.refeicoes.labels, datasets: [
         { label: "Fome antes", data: d.refeicoes.fome_antes, borderColor: FOME,
-          backgroundColor: FOME, tension: .3 },
+          backgroundColor: FOME, tension: .3, borderWidth: 2 },
         { label: "Fome depois", data: d.refeicoes.fome_depois, borderColor: FOME,
-          borderDash: [6, 4], backgroundColor: FOME, tension: .3 },
-        { label: "Saciedade antes", data: d.refeicoes.sac_antes, borderColor: SAC,
-          borderDash: [6, 4], backgroundColor: SAC, tension: .3 },
-        { label: "Saciedade depois", data: d.refeicoes.sac_depois, borderColor: SAC,
-          backgroundColor: SAC, tension: .3 },
+          borderDash: [6, 4], backgroundColor: FOME, tension: .3, borderWidth: 2 },
+        { label: "Sac. antes", data: d.refeicoes.sac_antes, borderColor: SAC,
+          borderDash: [6, 4], backgroundColor: SAC, tension: .3, borderWidth: 2 },
+        { label: "Sac. depois", data: d.refeicoes.sac_depois, borderColor: SAC,
+          backgroundColor: SAC, tension: .3, borderWidth: 2 },
       ]},
       options: { ...base, scales: eixo10 }
     });
@@ -167,7 +175,8 @@
       data: { labels: d.refeicoes.labels, datasets: [
         { label: "Efetividade (%)", data: d.refeicoes.efetividade,
           backgroundColor: MATA, borderRadius: 4 }]},
-      options: { ...base, scales: { y: { min: 0, max: 100 } } }
+      options: { ...base, scales: { y: { min: 0, max: 100 },
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } } } }
     });
   }
 
@@ -176,12 +185,14 @@
       type: "line",
       data: { labels: d.sono.labels, datasets: [
         { label: "Duração (h)", data: d.sono.duracao, borderColor: SONO,
-          backgroundColor: SONO, tension: .3, yAxisID: "y" },
-        { label: "Qualidade (1–10)", data: d.sono.qualidade, borderColor: SAC,
-          backgroundColor: SAC, tension: .3, yAxisID: "y2" }]},
+          backgroundColor: SONO, tension: .3, yAxisID: "y", borderWidth: 2 },
+        { label: "Qualidade", data: d.sono.qualidade, borderColor: SAC,
+          backgroundColor: SAC, tension: .3, yAxisID: "y2", borderWidth: 2 }]},
       options: { ...base, scales: {
-        y: { min: 0, max: 14, title: { display: true, text: "horas" } },
-        y2: { min: 0, max: 10, position: "right", grid: { drawOnChartArea: false } } } }
+        y: { min: 0, max: 14, ticks: { font: { size: 10 } } },
+        y2: { min: 0, max: 10, position: "right", grid: { drawOnChartArea: false },
+              ticks: { font: { size: 10 } } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } } } }
     });
   }
 
@@ -191,7 +202,7 @@
       data: { labels: d.exercicios.labels, datasets: [
         { label: "Minutos", data: d.exercicios.minutos,
           backgroundColor: EXE, borderRadius: 4 }]},
-      options: base
+      options: { ...base, scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 } } } }
     });
   }
 })();

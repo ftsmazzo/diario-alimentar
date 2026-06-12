@@ -1,21 +1,32 @@
 {% extends "base.html" %}
 {% block titulo %}Arquivos{% endblock %}
+{% block topo_titulo %}Arquivos{% endblock %}
 {% block conteudo %}
-<h1>Arquivos do nutricionista</h1>
+<header class="pagina-cab">
+  <div class="pagina-cab-texto">
+    <h1>Arquivos do nutricionista</h1>
+    <p class="pagina-sub">Cardápios, exames e planos enviados para você.</p>
+  </div>
+</header>
+
 <div class="painel tabela-rolagem">
   {% if arquivos %}
-  <table>
+  <table class="tabela-responsiva">
     <thead><tr><th>Recebido em</th><th>Categoria</th><th>Arquivo</th><th>Descrição</th><th></th></tr></thead>
     <tbody>
       {% for a in arquivos %}
       <tr>
-        <td>{{ a.enviado_em.strftime('%d/%m/%Y') }}
-            {% if not a.visto_em %}<span class="badge-novo">novo</span>{% endif %}</td>
-        <td>{{ a.categoria }}</td>
-        <td>{{ a.nome_original }}</td>
-        <td class="suave">{{ a.descricao }}</td>
-        <td><a class="btn btn-contorno btn-mini"
-               href="{{ url_for('paciente.baixar_arquivo', arquivo_id=a.id) }}">Baixar</a></td>
+        <td data-label="Recebido em">
+          {{ a.enviado_em.strftime('%d/%m/%Y') }}
+          {% if not a.visto_em %}<span class="badge-novo">novo</span>{% endif %}
+        </td>
+        <td data-label="Categoria">{{ a.categoria }}</td>
+        <td data-label="Arquivo">{{ a.nome_original }}</td>
+        <td data-label="Descrição" class="suave">{{ a.descricao or '—' }}</td>
+        <td class="td-acao" data-label="">
+          <a class="btn btn-primario btn-mini btn-bloco"
+             href="{{ url_for('paciente.baixar_arquivo', arquivo_id=a.id) }}">Baixar</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

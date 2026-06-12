@@ -1,35 +1,45 @@
 {% extends "base.html" %}
 {% block titulo %}Meus pacientes{% endblock %}
+{% block topo_titulo %}Pacientes{% endblock %}
 {% block conteudo %}
-<h1>Meus pacientes</h1>
+<header class="pagina-cab">
+  <div class="pagina-cab-texto">
+    <h1>Meus pacientes</h1>
+    <p class="pagina-sub">Acompanhe quem está vinculado ao seu código.</p>
+  </div>
+</header>
 
-<div class="painel topo-secao">
+<div class="painel bloco-convite">
   <div>
     <strong>Código de convite</strong>
-    <p class="suave" style="margin:4px 0 0">Compartilhe com seus pacientes:
-      eles informam este código ao criar a conta e o vínculo é automático.</p>
+    <p class="suave" style="margin:6px 0 0">Compartilhe com seus pacientes.
+      Eles informam este código ao criar a conta.</p>
   </div>
-  <div style="display:flex;gap:10px;align-items:center">
+  <div class="convite-acoes">
     <span class="codigo-convite">{{ codigo }}</span>
     <button class="btn btn-contorno btn-mini" id="copiar-codigo"
-            data-codigo="{{ codigo }}">Copiar código</button>
+            data-codigo="{{ codigo }}" type="button">Copiar código</button>
   </div>
 </div>
 
 <div class="painel tabela-rolagem">
   {% if resumo %}
-  <table>
+  <table class="tabela-responsiva">
     <thead><tr><th>Paciente</th><th>Última refeição</th><th>Refeições (7d)</th><th></th></tr></thead>
     <tbody>
       {% for item in resumo %}
       <tr>
-        <td><strong>{{ item.paciente.nome }}</strong><br>
-            <span class="suave">{{ item.paciente.email }}</span></td>
-        <td>{% if item.ultima %}{{ item.ultima.data_hora.strftime('%d/%m %H:%M') }}
+        <td data-label="Paciente">
+          <strong>{{ item.paciente.nome }}</strong><br>
+          <span class="suave">{{ item.paciente.email }}</span>
+        </td>
+        <td data-label="Última refeição">{% if item.ultima %}{{ item.ultima.data_hora.strftime('%d/%m %H:%M') }}
             {% else %}<span class="suave">sem registros</span>{% endif %}</td>
-        <td>{{ item.refeicoes_7d }}</td>
-        <td><a class="btn btn-primario btn-mini"
-               href="{{ url_for('nutri.paciente_detalhe', paciente_id=item.paciente.id) }}">Abrir painel</a></td>
+        <td data-label="Refeições (7d)">{{ item.refeicoes_7d }}</td>
+        <td class="td-acao" data-label="">
+          <a class="btn btn-primario btn-mini btn-bloco"
+             href="{{ url_for('nutri.paciente_detalhe', paciente_id=item.paciente.id) }}">Abrir painel</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

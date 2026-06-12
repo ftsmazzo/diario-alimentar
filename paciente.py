@@ -56,6 +56,14 @@ def _duracao_sono(hora_dormir, hora_acordar):
         return 0.0
 
 
+# ────────────────────────── hub de registro ──────────────────────────
+
+@bp_paciente.route("/registrar")
+@apenas_paciente
+def registrar():
+    return render_template("paciente/registrar.html")
+
+
 # ────────────────────────── dashboard ──────────────────────────
 
 @bp_paciente.route("/")

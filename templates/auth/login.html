@@ -2,7 +2,12 @@
 {% block titulo %}Entrar{% endblock %}
 {% block conteudo %}
 <div class="auth-caixa painel">
-  <h1>Entrar</h1>
+  <header class="pagina-cab" style="margin-bottom:12px">
+    <div class="pagina-cab-texto">
+      <h1>Entrar</h1>
+      <p class="pagina-sub">Acesse sua conta Pleno.</p>
+    </div>
+  </header>
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="campo">
