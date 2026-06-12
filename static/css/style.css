@@ -35,7 +35,7 @@
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
-  --margem-lateral: calc(16px + 2mm);
+  --margem-lateral: 28px;
   --toque-min: 44px;
 }
 
@@ -52,6 +52,7 @@ body {
   color: var(--tinta);
   background: var(--papel);
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
 }
 h1, h2, h3 { font-family: "Sora", sans-serif; line-height: 1.2; margin: 0; }
 h1 { font-size: 1.45rem; }
@@ -61,8 +62,10 @@ a { color: var(--mata); }
 .container {
   max-width: 1060px;
   margin: 0 auto;
+  width: 100%;
   padding-left: calc(var(--margem-lateral) + var(--safe-l));
   padding-right: calc(var(--margem-lateral) + var(--safe-r));
+  box-sizing: border-box;
 }
 
 /* ── shell do app ── */
@@ -631,6 +634,15 @@ tr:last-child td { border-bottom: 0; }
 }
 
 @media (max-width: 720px) {
+  :root { --margem-lateral: 32px; }
+
+  .app-topo .container,
+  .app-conteudo.container,
+  .rodape .container {
+    padding-left: calc(var(--margem-lateral) + var(--safe-l));
+    padding-right: calc(var(--margem-lateral) + var(--safe-r));
+  }
+
   .convite-acoes { flex-direction: column; width: 100%; }
   .convite-acoes .btn { width: 100%; }
   .pagina-cab { flex-direction: column; }
@@ -818,7 +830,7 @@ tr:last-child td { border-bottom: 0; }
 
 /* ── desktop ── */
 @media (min-width: 721px) {
-  :root { --margem-lateral: 20px; }
+  :root { --margem-lateral: 24px; }
   .grade-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .card-num { font-size: 1.7rem; }
   .linha-2 { grid-template-columns: 1fr 1fr; gap: 12px; }

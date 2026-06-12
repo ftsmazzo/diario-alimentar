@@ -11,7 +11,7 @@
   <title>{% block titulo %}Pleno{% endblock %} · Pleno</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='4') }}">
 </head>
 <body class="app{% if current_user.is_authenticated %} app-logado{% if current_user.eh_paciente %} app-paciente{% else %} app-nutri{% endif %}{% else %} app-auth{% endif %}{% block body_extra %}{% endblock %}">
 
@@ -109,7 +109,7 @@
   </div>
 </footer>
 
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js', v='4') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
